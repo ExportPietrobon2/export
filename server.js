@@ -230,5 +230,5 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'))
 })
 
-const PORTA = process.env.PORT || 3000
+const PORTA = process.env.PORT || 8080
 app.listen(PORTA, () => console.log(`Servidor rodando na porta ${PORTA}`))
