@@ -49,16 +49,16 @@ function renderizarAlmoxarifado(produtos) {
       }
       return '<tr><td>' + (rotuloInsumo[insumo.tipo] || insumo.tipo) + '</td><td>' + (insumo.confirmado ? '✅' : '❌') + '</td><td>' + detalhes + '</td></tr>'
     }).join('')
-    return '<div class="bloco-produto"><div class="produto-cabecalho"><strong>' + produto.produto + '</strong><span class="qtd-produto">' + formatarQuantidade(produto.quantidade) + '</span><span class="badge ' + (status === 'LIBERADO' ? 'badge-ok' : 'badge-pendente') + '">' + status + '</span></div>' + (insumos.length > 0 ? '<table class="tabela-insumos-admin"><thead><tr><th>Insumo</th><th>OK</th><th>Estoque</th></tr></thead><tbody>' + linhas + '</tbody></table>' : '<p class="vazio-inline">Sem dados do almoxarifado.</p>') + '</div>'
+    return '<div class="card border-0 bg-light rounded-3 p-3 mb-2"><div class="d-flex align-items-center gap-2 flex-wrap mb-2"><strong>' + produto.produto + '</strong><span class="badge bg-secondary">' + formatarQuantidade(produto.quantidade) + '</span><span class="badge ' + (status === 'LIBERADO' ? 'bg-success' : 'bg-danger') + '">' + status + '</span></div>' + (insumos.length > 0 ? '<table class="table table-sm table-bordered mb-0 tabela-insumos-admin"><thead><tr><th>Insumo</th><th>OK</th><th>Estoque</th></tr></thead><tbody>' + linhas + '</tbody></table>' : '<p class="text-muted small mb-0 fst-italic">Sem dados do almoxarifado.</p>') + '</div>'
   }).join('')
 }
 
 function renderizarRecebimentos(recebimentos) {
   const recebidos = (recebimentos || []).filter((r) => r.status_recebimento === 'recebido')
   if (recebidos.length === 0) return '<p class="vazio-inline">Nenhum recebimento confirmado ainda.</p>'
-  return '<div class="grid-recebimentos-detalhe">' + recebidos.map((r) => {
-    const fotos = (r.foto_url ? '<div class="foto-detalhe"><span class="foto-detalhe-label">Produto</span><img src="' + r.foto_url + '" class="foto-detalhe-img" loading="lazy"></div>' : '') + (r.foto_nota_url ? '<div class="foto-detalhe"><span class="foto-detalhe-label">Nota fiscal</span><img src="' + r.foto_nota_url + '" class="foto-detalhe-img" loading="lazy"></div>' : '') + (!r.foto_url && !r.foto_nota_url ? '<span class="vazio-inline">Sem fotos</span>' : '')
-    return '<div class="card-recebimento-detalhe"><div class="recebimento-detalhe-info"><span class="badge badge-ok">' + (rotuloInsumo[r.tipo] || r.tipo) + '</span>' + (r.quantidade_recebida ? '<span class="recebimento-quantidade">' + r.quantidade_recebida + '</span>' : '') + '</div><div class="recebimento-fotos">' + fotos + '</div></div>'
+  return '<div class="d-flex flex-column gap-2">' + recebidos.map((r) => {
+    const fotos = (r.foto_url ? '<div><span class="foto-detalhe-label">Produto</span><img src="' + r.foto_url + '" class="foto-detalhe-img rounded-3"></div>' : '') + (r.foto_nota_url ? '<div><span class="foto-detalhe-label">Nota fiscal</span><img src="' + r.foto_nota_url + '" class="foto-detalhe-img rounded-3"></div>' : '') + (!r.foto_url && !r.foto_nota_url ? '<span class="text-muted small fst-italic">Sem fotos</span>' : '')
+    return '<div class="card border-0 bg-light rounded-3 p-3"><div class="d-flex align-items-center gap-2 mb-2"><span class="badge bg-warning text-dark">' + (rotuloInsumo[r.tipo] || r.tipo) + '</span>' + (r.quantidade_recebida ? '<span class="badge bg-success">' + r.quantidade_recebida + '</span>' : '') + '</div><div class="d-flex gap-3 flex-wrap">' + fotos + '</div></div>'
   }).join('') + '</div>'
 }
 
@@ -79,18 +79,36 @@ async function carregar() {
 
   pedidos.forEach((pedido) => {
     const status = statusDoPi(pedido)
+    const liberado = status === 'LIBERADO'
+    const bloqueado = status === 'NÃO PRODUZ'
+
     const card = document.createElement('div')
-    card.className = 'card-pi-admin' + (pedido.concluida ? ' pi-concluida' : '')
+    card.className = 'card card-pi-admin mb-3' + (pedido.concluida ? ' pi-concluida' : '')
 
     const cabecalho = document.createElement('div')
-    cabecalho.className = 'card-pi-cabecalho'
-    cabecalho.innerHTML = '<div class="pi-cabecalho-info"><span class="pi-numero">PI ' + pedido.numero_pi + '</span><span class="pi-cliente">' + (pedido.cliente || '') + (pedido.destino ? ' · ' + pedido.destino : '') + '</span></div><div class="pi-cabecalho-acoes"><span class="badge ' + (status === 'LIBERADO' ? 'badge-ok' : status === 'NÃO PRODUZ' ? 'badge-pendente' : 'badge-em_andamento') + '">' + status + '</span><span class="recebimento-resumo">📦 ' + resumoRecebimento(pedido) + '</span><button class="btn-expandir" data-id="' + pedido.id + '">Ver detalhes ▾</button><button class="btn-concluir' + (pedido.concluida ? ' btn-reabrir' : '') + '" data-id="' + pedido.id + '" data-concluida="' + (pedido.concluida ? 'true' : 'false') + '">' + (pedido.concluida ? '↩ Reabrir' : '✔ Concluir') + '</button></div>'
+    cabecalho.className = 'card-body d-flex justify-content-between align-items-start flex-wrap gap-2'
+    cabecalho.innerHTML = `
+      <div>
+        <div class="fw-bold fs-6">PI ${pedido.numero_pi}</div>
+        <div class="text-muted small">${pedido.cliente || ''} ${pedido.destino ? '· ' + pedido.destino : ''}</div>
+        <div class="mt-1 d-flex align-items-center gap-2 flex-wrap">
+          <span class="badge ${liberado ? 'bg-success' : bloqueado ? 'bg-danger' : 'bg-secondary'}">${status}</span>
+          <span class="small text-muted">📦 ${resumoRecebimento(pedido)}</span>
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-outline-danger btn-expandir" data-id="${pedido.id}">Ver detalhes ▾</button>
+        <button class="btn btn-sm ${pedido.concluida ? 'btn-outline-warning' : 'btn-outline-success'} btn-concluir" data-id="${pedido.id}" data-concluida="${pedido.concluida ? 'true' : 'false'}">
+          ${pedido.concluida ? '↩ Reabrir' : '✔ Concluir'}
+        </button>
+      </div>
+    `
 
     const detalhe = document.createElement('div')
-    detalhe.className = 'card-pi-detalhe'
     detalhe.id = 'detalhe-' + pedido.id
     detalhe.style.display = 'none'
-    detalhe.innerHTML = '<h4 class="detalhe-titulo">Insumos por Produto</h4>' + renderizarAlmoxarifado(pedido.produtos_pi) + '<h4 class="detalhe-titulo">Recebimentos B2</h4>' + renderizarRecebimentos(pedido.recebimentos_b2)
+    detalhe.className = 'border-top px-3 pb-3'
+    detalhe.innerHTML = '<h6 class="fw-bold mt-3 text-muted text-uppercase small">Insumos por Produto</h6>' + renderizarAlmoxarifado(pedido.produtos_pi) + '<h6 class="fw-bold mt-3 text-muted text-uppercase small">Recebimentos B2</h6>' + renderizarRecebimentos(pedido.recebimentos_b2)
 
     card.appendChild(cabecalho)
     card.appendChild(detalhe)
