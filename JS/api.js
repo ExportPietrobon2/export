@@ -1,7 +1,7 @@
 const BASE = ''
 
 function getToken() {
-  return sessionStorage.getItem('token')
+  return sessionStorage.getItem('token') || localStorage.getItem('token_deposito')
 }
 
 async function requisitar(metodo, rota, corpo, formData) {
@@ -53,10 +53,11 @@ export const api = {
 
   recebimentos: {
     pendentes: () => requisitar('GET', '/api/recebimentos/pendentes'),
-    registrar: (id, quantidadeRecebida, arquivo) => {
+    registrar: (id, quantidadeRecebida, fotoProduto, fotoNota) => {
       const formData = new FormData()
       formData.append('quantidade_recebida', quantidadeRecebida)
-      if (arquivo) formData.append('foto', arquivo)
+      if (fotoProduto) formData.append('foto_produto', fotoProduto)
+      if (fotoNota) formData.append('foto_nota', fotoNota)
       return requisitar('PATCH', `/api/recebimentos/${id}`, null, formData)
     }
   },

@@ -912,3 +912,39 @@ th {
   color: var(--pietrobon-red);
   font-weight: 600;
 }
+
+.area-botoes-recebimento {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-foto {
+  background: var(--white);
+  color: var(--gray-text);
+  border: 1px solid var(--gray-borda);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-foto:hover {
+  border-color: var(--pietrobon-orange);
+  color: var(--pietrobon-orange);
+}
+
+.btn-foto-ok {
+  border-color: var(--green-ok);
+  color: var(--green-ok);
+}
+
+.preview-foto {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin: 8px 0;
+}

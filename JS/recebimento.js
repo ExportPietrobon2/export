@@ -40,43 +40,96 @@ async function carregarPendentes() {
       <input type="number" class="input-quantidade" placeholder="ex: ${unidade === 'kg' ? '300' : '4'}" min="0" step="any">
     `
 
-    const inputFoto = document.createElement('input')
-    inputFoto.type = 'file'
-    inputFoto.accept = 'image/*'
-    inputFoto.capture = 'environment'
-    inputFoto.hidden = true
+    const inputFotoProduto = document.createElement('input')
+    inputFotoProduto.type = 'file'
+    inputFotoProduto.accept = 'image/*'
+    inputFotoProduto.capture = 'environment'
+    inputFotoProduto.hidden = true
 
-    const botao = document.createElement('button')
-    botao.className = 'btn-ok'
-    botao.textContent = '📷 Registrar com foto'
-    botao.addEventListener('click', () => {
-      const quantidade = campoQuantidade.querySelector('.input-quantidade').value
-      if (!quantidade) { alert(`Informe a quantidade recebida em ${unidade}.`); return }
-      inputFoto.click()
+    const inputFotoNota = document.createElement('input')
+    inputFotoNota.type = 'file'
+    inputFotoNota.accept = 'image/*'
+    inputFotoNota.capture = 'environment'
+    inputFotoNota.hidden = true
+
+    const areaBotoes = document.createElement('div')
+    areaBotoes.className = 'area-botoes-recebimento'
+
+    const botaoProduto = document.createElement('button')
+    botaoProduto.className = 'btn-foto'
+    botaoProduto.innerHTML = '📦 Foto do produto'
+    botaoProduto.addEventListener('click', () => inputFotoProduto.click())
+
+    const botaoNota = document.createElement('button')
+    botaoNota.className = 'btn-foto'
+    botaoNota.innerHTML = '🧾 Foto da nota fiscal'
+    botaoNota.addEventListener('click', () => inputFotoNota.click())
+
+    const previewProduto = document.createElement('img')
+    previewProduto.className = 'preview-foto'
+    previewProduto.hidden = true
+
+    const previewNota = document.createElement('img')
+    previewNota.className = 'preview-foto'
+    previewNota.hidden = true
+
+    inputFotoProduto.addEventListener('change', () => {
+      const arquivo = inputFotoProduto.files[0]
+      if (arquivo) {
+        previewProduto.src = URL.createObjectURL(arquivo)
+        previewProduto.hidden = false
+        botaoProduto.innerHTML = '📦 Produto ✅'
+        botaoProduto.className = 'btn-foto btn-foto-ok'
+      }
     })
 
-    inputFoto.addEventListener('change', () => {
-      const arquivo = inputFoto.files[0]
-      const quantidade = campoQuantidade.querySelector('.input-quantidade').value
-      if (arquivo) registrar(item.id, quantidade, unidade, arquivo, botao)
+    inputFotoNota.addEventListener('change', () => {
+      const arquivo = inputFotoNota.files[0]
+      if (arquivo) {
+        previewNota.src = URL.createObjectURL(arquivo)
+        previewNota.hidden = false
+        botaoNota.innerHTML = '🧾 Nota ✅'
+        botaoNota.className = 'btn-foto btn-foto-ok'
+      }
     })
+
+    const botaoRegistrar = document.createElement('button')
+    botaoRegistrar.className = 'btn-ok'
+    botaoRegistrar.textContent = '✔ Confirmar recebimento'
+    botaoRegistrar.addEventListener('click', () => {
+      const quantidade = campoQuantidade.querySelector('.input-quantidade').value
+      if (!quantidade) {
+        alert(`Informe a quantidade recebida em ${unidade}.`)
+        return
+      }
+      const fotoProduto = inputFotoProduto.files[0] || null
+      const fotoNota = inputFotoNota.files[0] || null
+      registrar(item.id, quantidade, unidade, fotoProduto, fotoNota, botaoRegistrar)
+    })
+
+    areaBotoes.appendChild(botaoProduto)
+    areaBotoes.appendChild(botaoNota)
 
     card.appendChild(info)
     card.appendChild(campoQuantidade)
-    card.appendChild(botao)
-    card.appendChild(inputFoto)
+    card.appendChild(previewProduto)
+    card.appendChild(previewNota)
+    card.appendChild(areaBotoes)
+    card.appendChild(inputFotoProduto)
+    card.appendChild(inputFotoNota)
+    card.appendChild(botaoRegistrar)
     containerCards.appendChild(card)
   })
 }
 
-async function registrar(id, quantidade, unidade, arquivo, botao) {
+async function registrar(id, quantidade, unidade, fotoProduto, fotoNota, botao) {
   botao.disabled = true
   botao.textContent = 'Enviando...'
-  const resultado = await api.recebimentos.registrar(id, `${quantidade} ${unidade}`, arquivo)
+  const resultado = await api.recebimentos.registrar(id, `${quantidade} ${unidade}`, fotoProduto, fotoNota)
   if (resultado?.erro) {
     alert('Erro ao registrar. Tente novamente.')
     botao.disabled = false
-    botao.textContent = '📷 Registrar com foto'
+    botao.textContent = '✔ Confirmar recebimento'
     return
   }
   carregarPendentes()

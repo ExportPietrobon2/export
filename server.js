@@ -185,23 +185,30 @@ app.get('/api/recebimentos/pendentes', autenticar(['admin', 'deposito']), async 
   res.json(rows)
 })
 
-app.patch('/api/recebimentos/:id', autenticar(['admin', 'deposito']), upload.single('foto'), async (req, res) => {
+app.patch('/api/recebimentos/:id', autenticar(['admin', 'deposito']), upload.fields([{ name: 'foto_produto', maxCount: 1 }, { name: 'foto_nota', maxCount: 1 }]), async (req, res) => {
   const { quantidade_recebida } = req.body
-  let fotoUrl = null
+  let fotoProdutoUrl = null
+  let fotoNotaUrl = null
 
-  if (req.file) {
-    const resultado = await new Promise((resolve, reject) => {
+  async function uploadFoto(buffer, pasta) {
+    return new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
-        { folder: 'recebimentos', resource_type: 'image' },
-        (erro, resultado) => erro ? reject(erro) : resolve(resultado)
-      ).end(req.file.buffer)
+        { folder: pasta, resource_type: 'image' },
+        (erro, resultado) => erro ? reject(erro) : resolve(resultado.secure_url)
+      ).end(buffer)
     })
-    fotoUrl = resultado.secure_url
+  }
+
+  if (req.files?.foto_produto?.[0]) {
+    fotoProdutoUrl = await uploadFoto(req.files.foto_produto[0].buffer, 'recebimentos/produtos')
+  }
+  if (req.files?.foto_nota?.[0]) {
+    fotoNotaUrl = await uploadFoto(req.files.foto_nota[0].buffer, 'recebimentos/notas')
   }
 
   await pool.query(
-    'UPDATE recebimentos_b2 SET status_recebimento = ?, recebido_em = NOW(), quantidade_recebida = ?, foto_url = ? WHERE id = ?',
-    ['recebido', quantidade_recebida || null, fotoUrl, req.params.id]
+    'UPDATE recebimentos_b2 SET status_recebimento = ?, recebido_em = NOW(), quantidade_recebida = ?, foto_url = ?, foto_nota_url = ? WHERE id = ?',
+    ['recebido', quantidade_recebida || null, fotoProdutoUrl, fotoNotaUrl, req.params.id]
   )
   res.json({ ok: true })
 })

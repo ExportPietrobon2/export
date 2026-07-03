@@ -1,5 +1,5 @@
 import { api } from './api.js'
-import { getPerfil } from './auth.js'
+import { getPerfil, salvarToken } from './auth.js'
 
 const paginaPorPapel = {
   admin: '/HTML/admin.html',
@@ -28,7 +28,7 @@ document.getElementById('form-login').addEventListener('submit', async (evento) 
     return
   }
 
-  sessionStorage.setItem('token', resultado.token)
+  salvarToken(resultado.token, resultado.papel)
   window.location.href = paginaPorPapel[resultado.papel]
 })
 
