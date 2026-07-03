@@ -948,3 +948,14 @@ th {
   border-radius: 10px;
   margin: 8px 0;
 }
+
+.btn-remover-foto {
+  background: none;
+  border: none;
+  color: var(--pietrobon-red);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 0;
+  text-decoration: underline;
+}

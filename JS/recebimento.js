@@ -78,6 +78,7 @@ async function carregarPendentes() {
       if (arquivo) {
         previewProduto.src = URL.createObjectURL(arquivo)
         previewProduto.hidden = false
+        btnRemoverProduto.hidden = false
         botaoProduto.innerHTML = '📦 Produto ✅'
         botaoProduto.className = 'btn-foto btn-foto-ok'
       }
@@ -88,12 +89,37 @@ async function carregarPendentes() {
       if (arquivo) {
         previewNota.src = URL.createObjectURL(arquivo)
         previewNota.hidden = false
+        btnRemoverNota.hidden = false
         botaoNota.innerHTML = '🧾 Nota ✅'
         botaoNota.className = 'btn-foto btn-foto-ok'
       }
     })
 
-    const botaoRegistrar = document.createElement('button')
+    const btnRemoverProduto = document.createElement('button')
+    btnRemoverProduto.className = 'btn-remover-foto'
+    btnRemoverProduto.textContent = '✕ Remover foto do produto'
+    btnRemoverProduto.hidden = true
+    btnRemoverProduto.addEventListener('click', () => {
+      inputFotoProduto.value = ''
+      previewProduto.hidden = true
+      previewProduto.src = ''
+      btnRemoverProduto.hidden = true
+      botaoProduto.innerHTML = '📦 Foto do produto'
+      botaoProduto.className = 'btn-foto'
+    })
+
+    const btnRemoverNota = document.createElement('button')
+    btnRemoverNota.className = 'btn-remover-foto'
+    btnRemoverNota.textContent = '✕ Remover foto da nota'
+    btnRemoverNota.hidden = true
+    btnRemoverNota.addEventListener('click', () => {
+      inputFotoNota.value = ''
+      previewNota.hidden = true
+      previewNota.src = ''
+      btnRemoverNota.hidden = true
+      botaoNota.innerHTML = '🧾 Foto da nota fiscal'
+      botaoNota.className = 'btn-foto'
+    })
     botaoRegistrar.className = 'btn-ok'
     botaoRegistrar.textContent = '✔ Confirmar recebimento'
     botaoRegistrar.addEventListener('click', () => {
@@ -113,7 +139,9 @@ async function carregarPendentes() {
     card.appendChild(info)
     card.appendChild(campoQuantidade)
     card.appendChild(previewProduto)
+    card.appendChild(btnRemoverProduto)
     card.appendChild(previewNota)
+    card.appendChild(btnRemoverNota)
     card.appendChild(areaBotoes)
     card.appendChild(inputFotoProduto)
     card.appendChild(inputFotoNota)
