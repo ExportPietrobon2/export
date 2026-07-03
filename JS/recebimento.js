@@ -22,6 +22,7 @@ async function carregarPendentes() {
 
   itens.forEach((item) => {
     const unidade = unidadePorTipo[item.tipo] || 'unidades'
+
     const card = document.createElement('div')
     card.className = 'card-recebimento'
 
@@ -52,19 +53,6 @@ async function carregarPendentes() {
     inputFotoNota.capture = 'environment'
     inputFotoNota.hidden = true
 
-    const areaBotoes = document.createElement('div')
-    areaBotoes.className = 'area-botoes-recebimento'
-
-    const botaoProduto = document.createElement('button')
-    botaoProduto.className = 'btn-foto'
-    botaoProduto.innerHTML = '📦 Foto do produto'
-    botaoProduto.addEventListener('click', () => inputFotoProduto.click())
-
-    const botaoNota = document.createElement('button')
-    botaoNota.className = 'btn-foto'
-    botaoNota.innerHTML = '🧾 Foto da nota fiscal'
-    botaoNota.addEventListener('click', () => inputFotoNota.click())
-
     const previewProduto = document.createElement('img')
     previewProduto.className = 'preview-foto'
     previewProduto.hidden = true
@@ -73,32 +61,51 @@ async function carregarPendentes() {
     previewNota.className = 'preview-foto'
     previewNota.hidden = true
 
-    inputFotoProduto.addEventListener('change', () => {
-      const arquivo = inputFotoProduto.files[0]
-      if (arquivo) {
-        previewProduto.src = URL.createObjectURL(arquivo)
-        previewProduto.hidden = false
-        btnRemoverProduto.hidden = false
-        botaoProduto.innerHTML = '📦 Produto ✅'
-        botaoProduto.className = 'btn-foto btn-foto-ok'
-      }
-    })
-
-    inputFotoNota.addEventListener('change', () => {
-      const arquivo = inputFotoNota.files[0]
-      if (arquivo) {
-        previewNota.src = URL.createObjectURL(arquivo)
-        previewNota.hidden = false
-        btnRemoverNota.hidden = false
-        botaoNota.innerHTML = '🧾 Nota ✅'
-        botaoNota.className = 'btn-foto btn-foto-ok'
-      }
-    })
-
     const btnRemoverProduto = document.createElement('button')
     btnRemoverProduto.className = 'btn-remover-foto'
     btnRemoverProduto.textContent = '✕ Remover foto do produto'
     btnRemoverProduto.hidden = true
+
+    const btnRemoverNota = document.createElement('button')
+    btnRemoverNota.className = 'btn-remover-foto'
+    btnRemoverNota.textContent = '✕ Remover foto da nota'
+    btnRemoverNota.hidden = true
+
+    const botaoProduto = document.createElement('button')
+    botaoProduto.className = 'btn-foto'
+    botaoProduto.innerHTML = '📦 Foto do produto'
+
+    const botaoNota = document.createElement('button')
+    botaoNota.className = 'btn-foto'
+    botaoNota.innerHTML = '🧾 Foto da nota fiscal'
+
+    const botaoRegistrar = document.createElement('button')
+    botaoRegistrar.className = 'btn-ok'
+    botaoRegistrar.textContent = '✔ Confirmar recebimento'
+
+    botaoProduto.addEventListener('click', () => inputFotoProduto.click())
+    botaoNota.addEventListener('click', () => inputFotoNota.click())
+
+    inputFotoProduto.addEventListener('change', () => {
+      const arquivo = inputFotoProduto.files[0]
+      if (!arquivo) return
+      previewProduto.src = URL.createObjectURL(arquivo)
+      previewProduto.hidden = false
+      btnRemoverProduto.hidden = false
+      botaoProduto.innerHTML = '📦 Produto ✅'
+      botaoProduto.className = 'btn-foto btn-foto-ok'
+    })
+
+    inputFotoNota.addEventListener('change', () => {
+      const arquivo = inputFotoNota.files[0]
+      if (!arquivo) return
+      previewNota.src = URL.createObjectURL(arquivo)
+      previewNota.hidden = false
+      btnRemoverNota.hidden = false
+      botaoNota.innerHTML = '🧾 Nota ✅'
+      botaoNota.className = 'btn-foto btn-foto-ok'
+    })
+
     btnRemoverProduto.addEventListener('click', () => {
       inputFotoProduto.value = ''
       previewProduto.hidden = true
@@ -108,10 +115,6 @@ async function carregarPendentes() {
       botaoProduto.className = 'btn-foto'
     })
 
-    const btnRemoverNota = document.createElement('button')
-    btnRemoverNota.className = 'btn-remover-foto'
-    btnRemoverNota.textContent = '✕ Remover foto da nota'
-    btnRemoverNota.hidden = true
     btnRemoverNota.addEventListener('click', () => {
       inputFotoNota.value = ''
       previewNota.hidden = true
@@ -120,8 +123,7 @@ async function carregarPendentes() {
       botaoNota.innerHTML = '🧾 Foto da nota fiscal'
       botaoNota.className = 'btn-foto'
     })
-    botaoRegistrar.className = 'btn-ok'
-    botaoRegistrar.textContent = '✔ Confirmar recebimento'
+
     botaoRegistrar.addEventListener('click', () => {
       const quantidade = campoQuantidade.querySelector('.input-quantidade').value
       if (!quantidade) {
@@ -133,6 +135,8 @@ async function carregarPendentes() {
       registrar(item.id, quantidade, unidade, fotoProduto, fotoNota, botaoRegistrar)
     })
 
+    const areaBotoes = document.createElement('div')
+    areaBotoes.className = 'area-botoes-recebimento'
     areaBotoes.appendChild(botaoProduto)
     areaBotoes.appendChild(botaoNota)
 
