@@ -1076,3 +1076,82 @@ th {
   width: 100%;
   transition: background 0.3s ease;
 }
+
+.linha-produto-almox {
+  background: var(--white);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  box-shadow: var(--sombra-suave);
+  overflow: hidden;
+}
+
+.linha-produto-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+  cursor: default;
+}
+
+.linha-produto-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.linha-produto-nome {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.linha-produto-acoes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.indicador-status {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.indicador-ok {
+  background: #E8F5E9;
+  color: var(--green-ok);
+}
+
+.indicador-nok {
+  background: #FDECEA;
+  color: var(--pietrobon-red);
+}
+
+.btn-expandir-produto {
+  background: var(--white);
+  color: var(--pietrobon-red);
+  border: 1px solid var(--pietrobon-red);
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-expandir-produto:hover {
+  background: var(--pietrobon-red);
+  color: var(--white);
+}
+
+.formulario-produto-almox {
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--gray-borda);
+}
+
+.formulario-produto-almox .grid-insumos-almox {
+  margin-top: 16px;
+}

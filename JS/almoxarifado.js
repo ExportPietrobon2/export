@@ -29,10 +29,7 @@ async function carregarPedidos() {
 
 async function carregarPi(piId) {
   containerConteudo.innerHTML = '<p class="loading">Carregando...</p>'
-  if (!piId) {
-    containerConteudo.innerHTML = ''
-    return
-  }
+  if (!piId) { containerConteudo.innerHTML = ''; return }
 
   const produtos = await api.produtos.listar(piId)
   if (!produtos || produtos.length === 0) {
@@ -51,54 +48,64 @@ async function carregarPi(piId) {
     })
 
     const status = statusAutomatico(insumos, produto.quantidade)
-    const bloco = document.createElement('div')
-    bloco.className = 'bloco-produto-almox'
-    bloco.dataset.produtoId = produto.id
+    const liberado = status === 'LIBERADO'
 
-    bloco.innerHTML = `
-      <div class="produto-almox-cabecalho">
-        <div class="produto-almox-info">
-          <strong>${produto.produto}</strong>
-          <span class="qtd-produto">${formatarQuantidade(produto.quantidade)}</span>
-        </div>
-        <span class="badge ${status === 'LIBERADO' ? 'badge-ok' : 'badge-pendente'}" data-status="${produto.id}">${status}</span>
+    const linha = document.createElement('div')
+    linha.className = 'linha-produto-almox'
+
+    const topo = document.createElement('div')
+    topo.className = 'linha-produto-topo'
+    topo.innerHTML = `
+      <div class="linha-produto-info">
+        <span class="linha-produto-nome">${produto.produto}</span>
+        <span class="qtd-produto">${formatarQuantidade(produto.quantidade)}</span>
       </div>
+      <div class="linha-produto-acoes">
+        <span class="indicador-status ${liberado ? 'indicador-ok' : 'indicador-nok'}" data-status="${produto.id}">
+          ${liberado ? '✔ OK' : '✗ Pendente'}
+        </span>
+        <button class="btn-expandir-produto" data-id="${produto.id}">Editar ▾</button>
+      </div>
+    `
 
+    const formulario = document.createElement('div')
+    formulario.className = 'formulario-produto-almox'
+    formulario.id = `form-produto-${produto.id}`
+    formulario.style.display = 'none'
+    formulario.innerHTML = `
       <div class="grid-insumos-almox">
         ${TIPOS_INSUMO.map((tipo) => {
           const insumo = insumos[tipo.chave]
-          let conteudoExtra = ''
+          const unidade = tipo.chave === 'caixa' ? 'cx' : tipo.chave === 'etiqueta' ? 'un' : 'kg'
+          const sobra = Number(insumo.sobra) || 0
+          const necessario = Number(produto.quantidade) || 0
 
+          let resultado = ''
           if (tipo.chave === 'caixa') {
-            const sobra = Number(insumo.sobra) || 0
-            const necessario = Number(produto.quantidade) || 0
             const suf = sobra >= necessario
-            conteudoExtra = `<div class="saldo-valor ${suf ? 'saldo-positivo' : 'saldo-negativo'} resultado-caixa-${produto.id}">
+            resultado = `<div class="saldo-valor ${suf ? 'saldo-positivo' : 'saldo-negativo'} resultado-${produto.id}-caixa">
               ${suf ? `Suficiente (sobram ${sobra - necessario} cx)` : `Faltam ${necessario - sobra} cx`}
             </div>`
           } else if (tipo.chave === 'etiqueta') {
-            const sobra = Number(insumo.sobra) || 0
             const baixo = sobra > 0 && sobra < 100
             const sem = sobra === 0
-            conteudoExtra = `<div class="saldo-valor ${sem ? 'saldo-negativo' : baixo ? 'saldo-alerta' : 'saldo-positivo'} resultado-etiqueta-${produto.id}">
-              ${sem ? 'Sem estoque' : baixo ? `⚠ Estoque baixo (${sobra} un)` : `${sobra} unidades`}
+            resultado = `<div class="saldo-valor ${sem ? 'saldo-negativo' : baixo ? 'saldo-alerta' : 'saldo-positivo'} resultado-${produto.id}-etiqueta">
+              ${sem ? 'Sem estoque' : baixo ? `⚠ Baixo (${sobra} un)` : `${sobra} unidades`}
             </div>`
           } else {
             const pacotes = Number(insumo.quantidade_por_pacote) || 0
-            conteudoExtra = pacotes > 0 ? `<div class="saldo-valor saldo-positivo">${pacotes} pacotes possíveis</div>` : ''
+            resultado = pacotes > 0 ? `<div class="saldo-valor saldo-positivo">${pacotes} pacotes possíveis</div>` : ''
           }
-
-          const unidade = tipo.chave === 'caixa' ? 'cx' : tipo.chave === 'etiqueta' ? 'un' : 'kg'
 
           return `<div class="card-insumo-almox">
             <h4>${tipo.rotulo}</h4>
             <label class="linha-campo">
-              ${tipo.chave === 'caixa' ? 'Sobra (cx)' : tipo.chave === 'etiqueta' ? 'Sobra (un)' : 'Sobra (kg)'}
+              Sobra (${unidade})
               <input type="number"
                 data-produto="${produto.id}"
                 data-campo="sobra"
                 data-tipo="${tipo.chave}"
-                value="${insumo.sobra}"
+                value="${sobra}"
                 placeholder="0">
             </label>
             ${tipo.chave !== 'caixa' && tipo.chave !== 'etiqueta' ? `<label class="linha-campo">
@@ -110,7 +117,7 @@ async function carregarPi(piId) {
                 value="${insumo.quantidade_por_pacote}"
                 placeholder="0">
             </label>` : ''}
-            ${conteudoExtra}
+            ${resultado}
           </div>`
         }).join('')}
       </div>
@@ -121,17 +128,28 @@ async function carregarPi(piId) {
       </label>
 
       <button class="btn-primary btn-salvar-produto" data-produto="${produto.id}" data-quantidade="${produto.quantidade}">
-        Salvar ${produto.produto}
+        Salvar
       </button>
     `
 
-    containerConteudo.appendChild(bloco)
+    linha.appendChild(topo)
+    linha.appendChild(formulario)
+    containerConteudo.appendChild(linha)
   }
 
-  adicionarListeners(piId)
+  adicionarListeners()
 }
 
-function adicionarListeners(piId) {
+function adicionarListeners() {
+  containerConteudo.querySelectorAll('.btn-expandir-produto').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const form = document.getElementById(`form-produto-${btn.dataset.id}`)
+      const aberto = form.style.display !== 'none'
+      form.style.display = aberto ? 'none' : 'block'
+      btn.textContent = aberto ? 'Editar ▾' : 'Fechar ▴'
+    })
+  })
+
   containerConteudo.querySelectorAll('input[data-campo="sobra"]').forEach((input) => {
     input.addEventListener('input', () => atualizarResultado(input))
   })
@@ -150,25 +168,25 @@ function atualizarResultado(input) {
     const btn = containerConteudo.querySelector(`.btn-salvar-produto[data-produto="${produtoId}"]`)
     const necessario = Number(btn?.dataset.quantidade) || 0
     const suf = sobra >= necessario
-    const el = containerConteudo.querySelector(`.resultado-caixa-${produtoId}`)
+    const el = containerConteudo.querySelector(`.resultado-${produtoId}-caixa`)
     if (el) {
       el.textContent = suf ? `Suficiente (sobram ${sobra - necessario} cx)` : `Faltam ${necessario - sobra} cx`
-      el.className = `saldo-valor ${suf ? 'saldo-positivo' : 'saldo-negativo'} resultado-caixa-${produtoId}`
+      el.className = `saldo-valor ${suf ? 'saldo-positivo' : 'saldo-negativo'} resultado-${produtoId}-caixa`
     }
   } else if (tipo === 'etiqueta') {
     const baixo = sobra > 0 && sobra < 100
     const sem = sobra === 0
-    const el = containerConteudo.querySelector(`.resultado-etiqueta-${produtoId}`)
+    const el = containerConteudo.querySelector(`.resultado-${produtoId}-etiqueta`)
     if (el) {
-      el.textContent = sem ? 'Sem estoque' : baixo ? `⚠ Estoque baixo (${sobra} un)` : `${sobra} unidades`
-      el.className = `saldo-valor ${sem ? 'saldo-negativo' : baixo ? 'saldo-alerta' : 'saldo-positivo'} resultado-etiqueta-${produtoId}`
+      el.textContent = sem ? 'Sem estoque' : baixo ? `⚠ Baixo (${sobra} un)` : `${sobra} unidades`
+      el.className = `saldo-valor ${sem ? 'saldo-negativo' : baixo ? 'saldo-alerta' : 'saldo-positivo'} resultado-${produtoId}-etiqueta`
     }
   }
 
-  atualizarBadgeStatus(produtoId)
+  atualizarIndicador(produtoId)
 }
 
-function atualizarBadgeStatus(produtoId) {
+function atualizarIndicador(produtoId) {
   const btn = containerConteudo.querySelector(`.btn-salvar-produto[data-produto="${produtoId}"]`)
   const quantidade = Number(btn?.dataset.quantidade) || 0
   const insumosAtuais = {}
@@ -177,10 +195,11 @@ function atualizarBadgeStatus(produtoId) {
     insumosAtuais[tipo.chave] = { sobra: inputSobra ? inputSobra.value : 0 }
   })
   const novoStatus = statusAutomatico(insumosAtuais, quantidade)
-  const badge = containerConteudo.querySelector(`[data-status="${produtoId}"]`)
-  if (badge) {
-    badge.textContent = novoStatus
-    badge.className = `badge ${novoStatus === 'LIBERADO' ? 'badge-ok' : 'badge-pendente'}`
+  const liberado = novoStatus === 'LIBERADO'
+  const indicador = containerConteudo.querySelector(`[data-status="${produtoId}"]`)
+  if (indicador) {
+    indicador.textContent = liberado ? '✔ OK' : '✗ Pendente'
+    indicador.className = `indicador-status ${liberado ? 'indicador-ok' : 'indicador-nok'}`
   }
 }
 
@@ -196,26 +215,26 @@ async function salvarProduto(produtoId, quantidade) {
   })
 
   const textarea = containerConteudo.querySelector(`textarea[data-produto="${produtoId}"]`)
-
   const resultado = await api.produtos.salvarInsumos(produtoId, {
     insumos: insumosParaSalvar,
     observacoes: textarea ? textarea.value : '',
     quantidade
   })
 
-  if (resultado?.erro) {
-    alert('Erro ao salvar. Tente novamente.')
-    return
-  }
+  if (resultado?.erro) { alert('Erro ao salvar.'); return }
 
   const btn = containerConteudo.querySelector(`.btn-salvar-produto[data-produto="${produtoId}"]`)
-  const textoOriginal = btn.textContent
+  const form = document.getElementById(`form-produto-${produtoId}`)
+  const btnExpandir = containerConteudo.querySelector(`.btn-expandir-produto[data-id="${produtoId}"]`)
+
   btn.textContent = '✔ Salvo!'
   btn.style.background = 'var(--green-ok)'
   setTimeout(() => {
-    btn.textContent = textoOriginal
+    btn.textContent = 'Salvar'
     btn.style.background = ''
-  }, 2000)
+    form.style.display = 'none'
+    if (btnExpandir) btnExpandir.textContent = 'Editar ▾'
+  }, 1500)
 }
 
 selectPi.addEventListener('change', () => carregarPi(selectPi.value))
