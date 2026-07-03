@@ -8,7 +8,7 @@ const path = require('path')
 
 const app = express()
 app.use(express.json())
-app.use(express.static(path.join(__dirname, 'public')))
+app.use(express.static(path.join(__dirname, '.')))
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -227,8 +227,8 @@ app.delete('/api/usuarios/:id', autenticar(['admin']), async (req, res) => {
 })
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'))
+  res.sendFile(path.join(__dirname, 'index.html'))
 })
 
 const PORTA = process.env.PORT || 8080
-app.listen(PORTA, () => console.log(`Servidor rodando na porta ${PORTA}`))
+app.listen(PORTA, '0.0.0.0', () => console.log(`Servidor rodando na porta ${PORTA}`))
