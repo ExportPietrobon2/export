@@ -73,7 +73,7 @@ async function carregarPi(piId) {
     formulario.id = `form-produto-${produto.id}`
     formulario.style.display = 'none'
     formulario.innerHTML = `
-      <div class="grid-insumos-almox">
+      <div class="row g-3 mt-1">
         ${TIPOS_INSUMO.map((tipo) => {
           const insumo = insumos[tipo.chave]
           const unidade = tipo.chave === 'caixa' ? 'cx' : tipo.chave === 'etiqueta' ? 'un' : 'kg'
@@ -97,37 +97,34 @@ async function carregarPi(piId) {
             resultado = pacotes > 0 ? `<div class="saldo-valor saldo-positivo">${pacotes} pacotes possíveis</div>` : ''
           }
 
-          return `<div class="card-insumo-almox">
-            <h4>${tipo.rotulo}</h4>
-            <label class="linha-campo">
-              Sobra (${unidade})
-              <input type="number"
+          return `<div class="col-6 col-md-3">
+            <div class="card-insumo-almox h-100">
+              <h4>${tipo.rotulo}</h4>
+            <label class="form-label small fw-semibold">Sobra (${unidade})</label>
+            <input type="number" class="form-control"
                 data-produto="${produto.id}"
                 data-campo="sobra"
                 data-tipo="${tipo.chave}"
                 value="${sobra}"
                 placeholder="0">
-            </label>
-            ${tipo.chave !== 'caixa' && tipo.chave !== 'etiqueta' ? `<label class="linha-campo">
-              Pacotes possíveis
-              <input type="number"
+            ${tipo.chave !== 'caixa' && tipo.chave !== 'etiqueta' ? `<label class="form-label small fw-semibold mt-2">Pacotes possíveis</label>
+              <input type="number" class="form-control"
                 data-produto="${produto.id}"
                 data-campo="quantidade_por_pacote"
                 data-tipo="${tipo.chave}"
                 value="${insumo.quantidade_por_pacote}"
-                placeholder="0">
-            </label>` : ''}
+                placeholder="0">` : ''}
             ${resultado}
-          </div>`
+          </div></div>`
         }).join('')}
       </div>
 
-      <label class="linha-campo observacoes-item">
-        Observações
-        <textarea data-produto="${produto.id}" data-campo="observacoes" rows="2">${produto.observacoes || ''}</textarea>
-      </label>
+      <div class="mt-3">
+        <label class="form-label small fw-semibold">Observações</label>
+        <textarea class="form-control" data-produto="${produto.id}" data-campo="observacoes" rows="2">${produto.observacoes || ''}</textarea>
+      </div>
 
-      <button class="btn-primary btn-salvar-produto" data-produto="${produto.id}" data-quantidade="${produto.quantidade}">
+      <button class="btn btn-pietrobon w-100 mt-3 btn-salvar-produto" data-produto="${produto.id}" data-quantidade="${produto.quantidade}">
         Salvar
       </button>
     `

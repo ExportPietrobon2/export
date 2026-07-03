@@ -24,21 +24,26 @@ async function carregarPendentes() {
     const unidade = unidadePorTipo[item.tipo] || 'unidades'
 
     const card = document.createElement('div')
-    card.className = 'card-recebimento'
+    card.className = 'card card-recebimento mb-3'
+
+    const body = document.createElement('div')
+    body.className = 'card-body'
 
     const info = document.createElement('div')
-    info.className = 'card-info'
+    info.className = 'd-flex justify-content-between align-items-start mb-3'
     info.innerHTML = `
-      <span class="pi-numero">PI ${item.numero_pi ?? ''}</span>
-      <span class="cliente">${item.cliente ?? ''}</span>
-      <span class="tipo-insumo">${labelPorTipo[item.tipo] ?? item.tipo}</span>
+      <div>
+        <div class="fw-bold fs-5 text-danger">PI ${item.numero_pi ?? ''}</div>
+        <div class="text-muted small">${item.cliente ?? ''}</div>
+        <span class="badge bg-warning text-dark mt-1">${labelPorTipo[item.tipo] ?? item.tipo}</span>
+      </div>
     `
 
-    const campoQuantidade = document.createElement('label')
-    campoQuantidade.className = 'campo-quantidade-recebimento'
+    const campoQuantidade = document.createElement('div')
+    campoQuantidade.className = 'mb-3'
     campoQuantidade.innerHTML = `
-      <span>Quantidade recebida (${unidade})</span>
-      <input type="number" class="input-quantidade" placeholder="ex: ${unidade === 'kg' ? '300' : '4'}" min="0" step="any">
+      <label class="form-label fw-semibold small">Quantidade recebida (${unidade})</label>
+      <input type="number" class="form-control form-control-lg input-quantidade" placeholder="ex: ${unidade === 'kg' ? '300' : '4'}" min="0" step="any">
     `
 
     const inputFotoProduto = document.createElement('input')
@@ -135,21 +140,26 @@ async function carregarPendentes() {
       registrar(item.id, quantidade, unidade, fotoProduto, fotoNota, botaoRegistrar)
     })
 
+    botaoProduto.className = 'btn btn-outline-secondary btn-foto flex-fill'
+    botaoNota.className = 'btn btn-outline-secondary btn-foto flex-fill'
+    botaoRegistrar.className = 'btn btn-ok-grande mt-2'
+
     const areaBotoes = document.createElement('div')
-    areaBotoes.className = 'area-botoes-recebimento'
+    areaBotoes.className = 'd-flex gap-2 mb-2'
     areaBotoes.appendChild(botaoProduto)
     areaBotoes.appendChild(botaoNota)
 
-    card.appendChild(info)
-    card.appendChild(campoQuantidade)
-    card.appendChild(previewProduto)
-    card.appendChild(btnRemoverProduto)
-    card.appendChild(previewNota)
-    card.appendChild(btnRemoverNota)
-    card.appendChild(areaBotoes)
-    card.appendChild(inputFotoProduto)
-    card.appendChild(inputFotoNota)
-    card.appendChild(botaoRegistrar)
+    body.appendChild(info)
+    body.appendChild(campoQuantidade)
+    body.appendChild(previewProduto)
+    body.appendChild(btnRemoverProduto)
+    body.appendChild(previewNota)
+    body.appendChild(btnRemoverNota)
+    body.appendChild(areaBotoes)
+    body.appendChild(inputFotoProduto)
+    body.appendChild(inputFotoNota)
+    body.appendChild(botaoRegistrar)
+    card.appendChild(body)
     containerCards.appendChild(card)
   })
 }

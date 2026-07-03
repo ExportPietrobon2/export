@@ -1,49 +1,70 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Insumos - Exportação</title>
-    <link rel="stylesheet" href="/CSS/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro · Pietrobon</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/CSS/style.css">
 </head>
-<body data-pagina="cadastro.html" >
-    <div class="app-shell">
-        <div id="cabecalho"></div>
-        <main class="content">
-            <h1>Cadastro de PI e Produtos</h1>
-            <p class="subtitulo">Essas informações ficam disponíveis automaticamente para o Almoxarifado e o Recebimento B2.</p>
+<body data-pagina="cadastro.html">
+  <div id="cabecalho"></div>
+  <div class="container py-4">
+    <h1 class="h3 fw-bold mb-1">Cadastro de PI e Produtos</h1>
+    <p class="text-muted mb-4">Essas informações ficam disponíveis para o Almoxarifado e o Recebimento B2.</p>
 
-            <section class="bloco-cadastro">
-                <h2>Novo PI</h2>
-                <form id="form-novo-pi" class="form-linha">
-                    <input type="text" id="numero-pi" placeholder="Número do PI (ex: 159 VEN)" required>
-                    <input type="date" id="data-embarque">
-                    <input type="text" id="cliente-pi" placeholder="Cliente">
-                    <input type="text" id="destino-pi" placeholder="Destino / País">
-                    <button type="submit" class="btn-primary">Cadastrar PI</button>
-                </form>
-            </section>
-
-            <section class="bloco-cadastro">
-                <h2>Novo Produto dentro de um PI</h2>
-                <form id="form-novo-produto" class="form-linha">
-                    <select id="pi-do-produto" required>
-                        <option value="">Selecione o PI</option>
-                    </select>
-                    <input type="text" id="nome-produto" placeholder="Nome do produto" required>
-                    <input type="number" id="quantidade-produto" placeholder="Quantidade" required>
-                    <input type="text" id="observacoes-produto" placeholder="Observações (opcional)">
-                    <button type="submit" class="btn-primary">Cadastrar Produto</button>
-                </form>
-            </section>
-
-            <section>
-                <h2>PIs cadastrados</h2>
-                <div id="lista-pedidos"></div>
-            </section>
-        </main>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="fw-bold mb-3">Novo PI</h5>
+        <form id="form-novo-pi" class="row g-2">
+          <div class="col-12 col-sm-6 col-lg-3">
+            <input type="text" id="numero-pi" class="form-control" placeholder="Número do PI (ex: 159 VEN)" required>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-2">
+            <input type="date" id="data-embarque" class="form-control">
+          </div>
+          <div class="col-12 col-sm-6 col-lg-3">
+            <input type="text" id="cliente-pi" class="form-control" placeholder="Cliente">
+          </div>
+          <div class="col-12 col-sm-6 col-lg-2">
+            <input type="text" id="destino-pi" class="form-control" placeholder="Destino / País">
+          </div>
+          <div class="col-12 col-lg-2">
+            <button type="submit" class="btn btn-pietrobon w-100">Cadastrar PI</button>
+          </div>
+        </form>
+      </div>
     </div>
 
-    <script type="module" src="/JS/cadastro.js"></script>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="fw-bold mb-3">Novo Produto</h5>
+        <form id="form-novo-produto" class="row g-2">
+          <div class="col-12 col-sm-6 col-lg-3">
+            <select id="pi-do-produto" class="form-select" required>
+              <option value="">Selecione o PI</option>
+            </select>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-3">
+            <input type="text" id="nome-produto" class="form-control" placeholder="Nome do produto" required>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-2">
+            <input type="number" id="quantidade-produto" class="form-control" placeholder="Quantidade (cx)" required>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-2">
+            <input type="text" id="observacoes-produto" class="form-control" placeholder="Observações">
+          </div>
+          <div class="col-12 col-lg-2">
+            <button type="submit" class="btn btn-pietrobon w-100">Cadastrar Produto</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <h5 class="fw-bold mb-3">PIs cadastradas</h5>
+    <div id="lista-pedidos"></div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="/JS/cadastro.js"></script>
 </body>
 </html>

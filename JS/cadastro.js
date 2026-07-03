@@ -21,34 +21,35 @@ async function carregarPedidos() {
 
     const produtos = await api.produtos.listar(pedido.id)
     const bloco = document.createElement('div')
-    bloco.className = 'pi-resumo'
+    bloco.className = 'card border-0 shadow-sm mb-3'
 
     const cabecalhoPi = document.createElement('div')
-    cabecalhoPi.className = 'pi-resumo-cabecalho'
+    cabecalhoPi.className = 'card-body d-flex justify-content-between align-items-center flex-wrap gap-2'
 
-    const titulo = document.createElement('strong')
-    titulo.textContent = `PI ${pedido.numero_pi}`
+    const titulo = document.createElement('div')
+    titulo.innerHTML = `<strong class="text-danger">PI ${pedido.numero_pi}</strong> <span class="text-muted small">— ${pedido.cliente || 'sem cliente'} — ${pedido.destino || 'sem destino'}</span>`
     cabecalhoPi.appendChild(titulo)
 
     const botaoExcluir = document.createElement('button')
     botaoExcluir.type = 'button'
-    botaoExcluir.className = 'btn-excluir'
+    botaoExcluir.className = 'btn btn-sm btn-outline-danger'
     botaoExcluir.textContent = 'Excluir PI'
     botaoExcluir.addEventListener('click', () => excluirPi(pedido.id, pedido.numero_pi))
     cabecalhoPi.appendChild(botaoExcluir)
 
     bloco.appendChild(cabecalhoPi)
-    bloco.appendChild(document.createTextNode(` ${pedido.cliente || 'sem cliente'} — ${pedido.destino || 'sem destino'}`))
 
     const lista = document.createElement('ul')
+    lista.className = 'list-group list-group-flush'
     if (!produtos || produtos.length === 0) {
       const item = document.createElement('li')
-      item.className = 'sem-produtos'
+      item.className = 'list-group-item text-muted fst-italic small'
       item.textContent = 'Nenhum produto cadastrado ainda.'
       lista.appendChild(item)
     } else {
       produtos.forEach((produto) => {
         const item = document.createElement('li')
+        item.className = 'list-group-item small'
         item.textContent = `${produto.produto} — ${formatarQuantidade(produto.quantidade)}`
         lista.appendChild(item)
       })
