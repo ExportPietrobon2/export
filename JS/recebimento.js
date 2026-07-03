@@ -59,33 +59,33 @@ async function carregarPendentes() {
     inputFotoNota.hidden = true
 
     const previewProduto = document.createElement('img')
-    previewProduto.className = 'preview-foto'
+    previewProduto.className = 'preview-foto img-fluid rounded mb-2'
     previewProduto.hidden = true
 
     const previewNota = document.createElement('img')
-    previewNota.className = 'preview-foto'
+    previewNota.className = 'preview-foto img-fluid rounded mb-2'
     previewNota.hidden = true
 
     const btnRemoverProduto = document.createElement('button')
-    btnRemoverProduto.className = 'btn-remover-foto'
+    btnRemoverProduto.className = 'btn-remover-foto btn btn-sm btn-link text-danger d-block mb-2 text-decoration-none'
     btnRemoverProduto.textContent = '✕ Remover foto do produto'
     btnRemoverProduto.hidden = true
 
     const btnRemoverNota = document.createElement('button')
-    btnRemoverNota.className = 'btn-remover-foto'
+    btnRemoverNota.className = 'btn-remover-foto btn btn-sm btn-link text-danger d-block mb-2 text-decoration-none'
     btnRemoverNota.textContent = '✕ Remover foto da nota'
     btnRemoverNota.hidden = true
 
     const botaoProduto = document.createElement('button')
-    botaoProduto.className = 'btn-foto'
+    botaoProduto.className = 'btn btn-outline-secondary btn-foto flex-fill'
     botaoProduto.innerHTML = '📦 Foto do produto'
 
     const botaoNota = document.createElement('button')
-    botaoNota.className = 'btn-foto'
+    botaoNota.className = 'btn btn-outline-secondary btn-foto flex-fill'
     botaoNota.innerHTML = '🧾 Foto da nota fiscal'
 
     const botaoRegistrar = document.createElement('button')
-    botaoRegistrar.className = 'btn-ok'
+    botaoRegistrar.className = 'btn btn-ok-grande mt-2 w-100'
     botaoRegistrar.textContent = '✔ Confirmar recebimento'
 
     botaoProduto.addEventListener('click', () => inputFotoProduto.click())
@@ -98,7 +98,7 @@ async function carregarPendentes() {
       previewProduto.hidden = false
       btnRemoverProduto.hidden = false
       botaoProduto.innerHTML = '📦 Produto ✅'
-      botaoProduto.className = 'btn-foto btn-foto-ok'
+      botaoProduto.className = 'btn btn-success btn-foto flex-fill btn-foto-ok'
     })
 
     inputFotoNota.addEventListener('change', () => {
@@ -108,7 +108,7 @@ async function carregarPendentes() {
       previewNota.hidden = false
       btnRemoverNota.hidden = false
       botaoNota.innerHTML = '🧾 Nota ✅'
-      botaoNota.className = 'btn-foto btn-foto-ok'
+      botaoNota.className = 'btn btn-success btn-foto flex-fill btn-foto-ok'
     })
 
     btnRemoverProduto.addEventListener('click', () => {
@@ -117,7 +117,7 @@ async function carregarPendentes() {
       previewProduto.src = ''
       btnRemoverProduto.hidden = true
       botaoProduto.innerHTML = '📦 Foto do produto'
-      botaoProduto.className = 'btn-foto'
+      botaoProduto.className = 'btn btn-outline-secondary btn-foto flex-fill'
     })
 
     btnRemoverNota.addEventListener('click', () => {
@@ -126,7 +126,7 @@ async function carregarPendentes() {
       previewNota.src = ''
       btnRemoverNota.hidden = true
       botaoNota.innerHTML = '🧾 Foto da nota fiscal'
-      botaoNota.className = 'btn-foto'
+      botaoNota.className = 'btn btn-outline-secondary btn-foto flex-fill'
     })
 
     botaoRegistrar.addEventListener('click', () => {
@@ -139,10 +139,6 @@ async function carregarPendentes() {
       const fotoNota = inputFotoNota.files[0] || null
       registrar(item.id, quantidade, unidade, fotoProduto, fotoNota, botaoRegistrar)
     })
-
-    botaoProduto.className = 'btn btn-outline-secondary btn-foto flex-fill'
-    botaoNota.className = 'btn btn-outline-secondary btn-foto flex-fill'
-    botaoRegistrar.className = 'btn btn-ok-grande mt-2'
 
     const areaBotoes = document.createElement('div')
     areaBotoes.className = 'd-flex gap-2 mb-2'
