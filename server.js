@@ -177,11 +177,15 @@ app.patch('/api/produtos/:produtoId/insumos', autenticar(['admin', 'almoxarifado
 
 app.get('/api/recebimentos/pendentes', autenticar(['admin', 'deposito']), async (req, res) => {
   const [rows] = await pool.query(`
-    SELECT r.id, r.tipo, p.numero_pi, p.cliente
+    SELECT r.id, r.tipo,
+           p.numero_pi, p.cliente,
+           pr.produto
     FROM recebimentos_b2 r
     JOIN pedidos p ON p.id = r.pi_id
+    LEFT JOIN produtos_pi pr ON pr.pi_id = p.id
     WHERE r.status_recebimento = 'pendente' AND p.concluida = 0
-    ORDER BY r.id ASC
+    GROUP BY r.id, p.numero_pi, p.cliente, pr.produto
+    ORDER BY p.numero_pi, r.tipo ASC
   `)
   res.json(rows)
 })
