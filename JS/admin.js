@@ -54,12 +54,36 @@ function renderizarAlmoxarifado(produtos) {
 }
 
 function renderizarRecebimentos(recebimentos) {
-  const recebidos = (recebimentos || []).filter((r) => r.status_recebimento === 'recebido')
-  if (recebidos.length === 0) return '<p class="vazio-inline">Nenhum recebimento confirmado ainda.</p>'
-  return '<div class="d-flex flex-column gap-2">' + recebidos.map((r) => {
-    const fotos = (r.foto_url ? '<div><span class="foto-detalhe-label">Produto</span><img src="' + r.foto_url + '" class="foto-detalhe-img rounded-3"></div>' : '') + (r.foto_nota_url ? '<div><span class="foto-detalhe-label">Nota fiscal</span><img src="' + r.foto_nota_url + '" class="foto-detalhe-img rounded-3"></div>' : '') + (!r.foto_url && !r.foto_nota_url ? '<span class="text-muted small fst-italic">Sem fotos</span>' : '')
-    return '<div class="card border-0 bg-light rounded-3 p-3"><div class="d-flex align-items-center gap-2 mb-2"><span class="badge bg-warning text-dark">' + (rotuloInsumo[r.tipo] || r.tipo) + '</span>' + (r.quantidade_recebida ? '<span class="badge bg-success">' + r.quantidade_recebida + '</span>' : '') + '</div><div class="d-flex gap-3 flex-wrap">' + fotos + '</div></div>'
-  }).join('') + '</div>'
+  if (!recebimentos || recebimentos.length === 0) return '<p class="text-muted small fst-italic">Nenhum recebimento registrado.</p>'
+
+  const porProduto = {}
+  recebimentos.forEach((r) => {
+    const chave = r.nome_produto || 'Geral'
+    if (!porProduto[chave]) porProduto[chave] = []
+    porProduto[chave].push(r)
+  })
+
+  return Object.entries(porProduto).map(([nomeProduto, itens]) => {
+    const linhas = itens.map((r) => {
+      const recebido = r.status_recebimento === 'recebido'
+      const fotos = [
+        r.foto_url ? `<a href="${r.foto_url}" target="_blank"><img src="${r.foto_url}" class="foto-detalhe-img rounded-2 me-1"></a>` : '',
+        r.foto_nota_url ? `<a href="${r.foto_nota_url}" target="_blank"><img src="${r.foto_nota_url}" class="foto-detalhe-img rounded-2"></a>` : ''
+      ].filter(Boolean).join('')
+
+      return `<div class="d-flex align-items-start gap-2 flex-wrap mb-1">
+        <span class="badge ${recebido ? 'bg-success' : 'bg-danger'}" style="min-width:90px;text-align:center">${rotuloInsumo[r.tipo] || r.tipo}</span>
+        ${recebido && r.quantidade_recebida ? `<span class="badge bg-light text-dark border">${r.quantidade_recebida}</span>` : ''}
+        ${!recebido ? '<span class="text-muted small">Pendente</span>' : ''}
+        ${fotos ? `<div class="d-flex">${fotos}</div>` : ''}
+      </div>`
+    }).join('')
+
+    return `<div class="mb-2">
+      <div class="small fw-bold text-secondary mb-1">• ${nomeProduto}</div>
+      <div class="ps-2">${linhas}</div>
+    </div>`
+  }).join('<hr class="my-2">')
 }
 
 async function carregar() {

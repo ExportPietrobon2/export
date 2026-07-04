@@ -88,7 +88,12 @@ app.get('/api/pedidos/completo', autenticar(['admin']), async (req, res) => {
     }
     pedido.produtos_pi = produtos
     const [recebimentos] = await pool.query(
-      'SELECT tipo, status_recebimento, foto_url, foto_nota_url, quantidade_recebida FROM recebimentos_b2 WHERE pi_id = ?', [pedido.id]
+      `SELECT r.tipo, r.status_recebimento, r.foto_url, r.foto_nota_url, r.quantidade_recebida,
+              r.produto_id, pr.produto as nome_produto
+       FROM recebimentos_b2 r
+       LEFT JOIN produtos_pi pr ON pr.id = r.produto_id
+       WHERE r.pi_id = ?`,
+      [pedido.id]
     )
     pedido.recebimentos_b2 = recebimentos
   }
