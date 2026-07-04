@@ -10,14 +10,31 @@
 <body data-pagina="almoxarifado.html">
   <div id="cabecalho"></div>
   <div class="container py-4">
-    <h1 class="h3 fw-bold mb-1">Almoxarifado</h1>
-    <p class="text-muted mb-3">Selecione a PI para ver e editar todos os insumos de uma vez.</p>
-    <div class="mb-4">
-      <select id="select-pi" class="form-select form-select-lg">
-        <option value="">Selecione a PI</option>
-      </select>
+    <h1 class="h3 fw-bold mb-3">Almoxarifado</h1>
+
+    <ul class="nav nav-tabs mb-4" id="abas">
+      <li class="nav-item">
+        <button class="nav-link active" data-aba="estoque">Estoque</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-aba="recebimentos">Recebimentos B2</button>
+      </li>
+    </ul>
+
+    <div id="aba-estoque">
+      <p class="text-muted mb-3">Selecione a PI para ver e editar todos os insumos de uma vez.</p>
+      <div class="mb-4">
+        <select id="select-pi" class="form-select form-select-lg">
+          <option value="">Selecione a PI</option>
+        </select>
+      </div>
+      <div id="conteudo-pi"></div>
     </div>
-    <div id="conteudo-pi"></div>
+
+    <div id="aba-recebimentos" style="display:none">
+      <p class="text-muted mb-3">Visão de tudo que chegou no B2 por PI e produto.</p>
+      <div id="conteudo-recebimentos"></div>
+    </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="/JS/almoxarifado.js"></script>

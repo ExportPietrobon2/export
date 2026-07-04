@@ -236,6 +236,85 @@ async function salvarProduto(produtoId, quantidade) {
 
 selectPi.addEventListener('change', () => carregarPi(selectPi.value))
 
+const rotuloInsumo = { embalagem: 'Embalagem', rotulo: 'Rótulo', caixa: 'Caixa', etiqueta: 'Etiqueta' }
+
+async function carregarRecebimentos() {
+  const container = document.getElementById('conteudo-recebimentos')
+  container.innerHTML = '<p class="text-muted">Carregando...</p>'
+
+  const pis = await api.recebimentos.pendentes()
+  if (!pis || !pis.length) {
+    container.innerHTML = '<p class="text-muted fst-italic">Nenhum recebimento registrado.</p>'
+    return
+  }
+
+  container.innerHTML = ''
+
+  pis.forEach((pi) => {
+    const card = document.createElement('div')
+    card.className = 'card border-0 shadow-sm mb-3'
+
+    const topo = document.createElement('div')
+    topo.className = 'card-body pb-2'
+    topo.innerHTML = `
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-danger">PI ${pi.numero_pi}</span>
+        <span class="badge bg-secondary">${pi.cliente ?? ''}</span>
+      </div>
+    `
+    card.appendChild(topo)
+
+    pi.produtos.forEach((produto) => {
+      const bloco = document.createElement('div')
+      bloco.className = 'px-3 pb-3'
+
+      const nomeProduto = document.createElement('div')
+      nomeProduto.className = 'small fw-bold text-secondary mb-1'
+      nomeProduto.textContent = `• ${produto.produto}`
+      bloco.appendChild(nomeProduto)
+
+      const filaBotoes = document.createElement('div')
+      filaBotoes.className = 'd-flex gap-2 flex-wrap'
+
+      produto.insumos.forEach((insumo) => {
+        const recebido = insumo.status_recebimento === 'recebido'
+        const badge = document.createElement('span')
+        badge.className = `badge ${recebido ? 'bg-success' : 'bg-danger'}`
+        badge.style.borderRadius = '20px'
+        badge.style.padding = '6px 12px'
+        badge.style.fontSize = '0.82rem'
+        badge.innerHTML = `${recebido ? '✔' : '○'} ${rotuloInsumo[insumo.tipo] ?? insumo.tipo}${recebido && insumo.quantidade_recebida ? ' · ' + insumo.quantidade_recebida : ''}`
+        filaBotoes.appendChild(badge)
+      })
+
+      bloco.appendChild(filaBotoes)
+
+      if (pi.produtos.indexOf(produto) < pi.produtos.length - 1) {
+        const hr = document.createElement('hr')
+        hr.className = 'my-2 mx-0'
+        bloco.appendChild(hr)
+      }
+
+      card.appendChild(bloco)
+    })
+
+    container.appendChild(card)
+  })
+}
+
+document.querySelectorAll('[data-aba]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-aba]').forEach((b) => b.classList.remove('active'))
+    btn.classList.add('active')
+
+    const aba = btn.dataset.aba
+    document.getElementById('aba-estoque').style.display = aba === 'estoque' ? 'block' : 'none'
+    document.getElementById('aba-recebimentos').style.display = aba === 'recebimentos' ? 'block' : 'none'
+
+    if (aba === 'recebimentos') carregarRecebimentos()
+  })
+})
+
 async function iniciar() {
   const perfil = exigirPapel(['admin', 'almoxarifado'])
   if (!perfil) return
