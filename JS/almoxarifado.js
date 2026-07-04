@@ -54,7 +54,7 @@ async function carregarPi(piId) {
     linha.className = 'linha-produto-almox'
 
     const topo = document.createElement('div')
-    topo.className = 'linha-produto-topo'
+    topo.className = 'linha-produto-topo d-flex'
     topo.innerHTML = `
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 w-100">
         <div class="d-flex align-items-center gap-2 flex-wrap">

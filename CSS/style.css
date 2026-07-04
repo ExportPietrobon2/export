@@ -274,11 +274,13 @@ body {
   overflow: hidden;
   border: 1px solid var(--border);
 }
+.linha-produto-topo {
+  padding: 14px 18px;
+}
 .formulario-produto-almox {
-  padding: 0 16px 16px;
+  padding: 16px 18px 18px;
   border-top: 1px solid var(--border);
   background: #fff8f8;
-  padding-top: 16px;
 }
 
 .saldo-positivo, .saldo-negativo, .saldo-alerta {
