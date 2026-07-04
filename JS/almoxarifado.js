@@ -278,13 +278,51 @@ async function carregarRecebimentos() {
 
       produto.insumos.forEach((insumo) => {
         const recebido = insumo.status_recebimento === 'recebido'
+
+        const blocoInsumo = document.createElement('div')
+        blocoInsumo.className = 'd-flex flex-column gap-1 mb-1'
+
         const badge = document.createElement('span')
         badge.className = `badge ${recebido ? 'bg-success' : 'bg-danger'}`
         badge.style.borderRadius = '20px'
         badge.style.padding = '6px 12px'
         badge.style.fontSize = '0.82rem'
+        badge.style.width = 'fit-content'
         badge.innerHTML = `${recebido ? '✔' : '○'} ${rotuloInsumo[insumo.tipo] ?? insumo.tipo}${recebido && insumo.quantidade_recebida ? ' · ' + insumo.quantidade_recebida : ''}`
-        filaBotoes.appendChild(badge)
+        blocoInsumo.appendChild(badge)
+
+        if (recebido && (insumo.foto_url || insumo.foto_nota_url)) {
+          const fotos = document.createElement('div')
+          fotos.className = 'd-flex gap-2 flex-wrap mt-1'
+
+          if (insumo.foto_url) {
+            const link = document.createElement('a')
+            link.href = insumo.foto_url
+            link.target = '_blank'
+            const img = document.createElement('img')
+            img.src = insumo.foto_url
+            img.className = 'foto-detalhe-img rounded-2'
+            img.alt = 'Foto produto'
+            link.appendChild(img)
+            fotos.appendChild(link)
+          }
+
+          if (insumo.foto_nota_url) {
+            const link = document.createElement('a')
+            link.href = insumo.foto_nota_url
+            link.target = '_blank'
+            const img = document.createElement('img')
+            img.src = insumo.foto_nota_url
+            img.className = 'foto-detalhe-img rounded-2'
+            img.alt = 'Foto nota'
+            link.appendChild(img)
+            fotos.appendChild(link)
+          }
+
+          blocoInsumo.appendChild(fotos)
+        }
+
+        filaBotoes.appendChild(blocoInsumo)
       })
 
       bloco.appendChild(filaBotoes)

@@ -198,7 +198,7 @@ app.get('/api/recebimentos/pendentes', autenticar(['admin', 'deposito']), async 
     )
     for (const produto of produtos) {
       const [insumos] = await pool.query(
-        'SELECT id, tipo, status_recebimento, quantidade_recebida FROM recebimentos_b2 WHERE pi_id = ? AND produto_id = ?',
+        'SELECT id, tipo, status_recebimento, quantidade_recebida, foto_url, foto_nota_url FROM recebimentos_b2 WHERE pi_id = ? AND produto_id = ?',
         [pedido.id, produto.id]
       )
       produto.insumos = insumos
