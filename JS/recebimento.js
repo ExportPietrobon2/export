@@ -125,10 +125,10 @@ function criarForm(insumo, produto) {
   const inputFotoProduto = criarInputFoto()
   const inputFotoNota = criarInputFoto()
 
-  const btnRemoverProduto = criarBtnRemover('✕ produto')
+  const btnRemoverProduto = criarBtnRemover('✕ Produto')
   btnRemoverProduto.hidden = true
 
-  const btnRemoverNota = criarBtnRemover('✕ nota')
+  const btnRemoverNota = criarBtnRemover('✕ Nota')
   btnRemoverNota.hidden = true
 
   const btnFotoProduto = document.createElement('button')
