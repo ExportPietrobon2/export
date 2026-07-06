@@ -2,6 +2,7 @@ import { api } from './api.js'
 import { TIPOS_INSUMO, formatarQuantidade } from './constants.js'
 import { exigirPapel } from './auth.js'
 import { montarCabecalho } from './cabecalho.js'
+import { iniciarReferencia } from './referencia.js'
 
 const selectPi = document.getElementById('select-pi')
 const containerConteudo = document.getElementById('conteudo-pi')
@@ -348,8 +349,10 @@ document.querySelectorAll('[data-aba]').forEach((btn) => {
     const aba = btn.dataset.aba
     document.getElementById('aba-estoque').style.display = aba === 'estoque' ? 'block' : 'none'
     document.getElementById('aba-recebimentos').style.display = aba === 'recebimentos' ? 'block' : 'none'
+    document.getElementById('aba-rendimentos').style.display = aba === 'rendimentos' ? 'block' : 'none'
 
     if (aba === 'recebimentos') carregarRecebimentos()
+    if (aba === 'rendimentos') iniciarReferencia(document.getElementById('conteudo-referencia-wrapper-almox'))
   })
 })
 
