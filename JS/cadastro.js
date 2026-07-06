@@ -10,7 +10,7 @@ async function carregarPedidos() {
   const pedidos = await api.pedidos.listar()
   if (!pedidos) return
 
-  selectPiDoProduto.innerHTML = '<option value="">Selecione o PI</option>'
+  selectPiDoProduto.innerHTML = '<option value="">Selecione a PI</option>'
   listaPedidos.innerHTML = ''
 
   for (const pedido of pedidos) {
@@ -33,7 +33,7 @@ async function carregarPedidos() {
     const botaoExcluir = document.createElement('button')
     botaoExcluir.type = 'button'
     botaoExcluir.className = 'btn btn-sm btn-outline-danger'
-    botaoExcluir.textContent = 'Excluir PI'
+    botaoExcluir.textContent = 'Excluir a PI'
     botaoExcluir.addEventListener('click', () => excluirPi(pedido.id, pedido.numero_pi))
     if (!window._convidado) cabecalhoPi.appendChild(botaoExcluir)
 
@@ -85,7 +85,7 @@ async function editarQuantidade(produtoId, quantidadeAtual) {
 }
 
 async function excluirPi(piId, numeroPi) {
-  if (!confirm(`Excluir o PI ${numeroPi}? Isso remove também os produtos, insumos e recebimentos. Não pode ser desfeito.`)) return
+  if (!confirm(`Excluir a PI ${numeroPi}? Esta ação remove também os produtos, insumos e recebimentos. Não pode ser desfeito.`)) return
   await api.pedidos.excluir(piId)
   carregarPedidos()
 }

@@ -19,33 +19,37 @@
       <div class="page-header-icon">📊</div>
       <div class="page-header-texto">
         <h1 class="page-titulo">Painel Administrativo</h1>
-        <p class="page-subtitulo">Visão completa por PI — recebimento, almoxarifado e status</p>
+        <p class="page-subtitulo">Visão consolidada das PIs — insumos, recebimentos e status de produção</p>
       </div>
     </div>
 
     <div class="row g-3 mb-4">
       <div class="col-6 col-md-3">
-        <div class="card text-center py-3">
+        <div class="card text-center py-3 px-2">
+          <div class="resumo-card-icone">✅</div>
           <div class="display-6 fw-bold text-success" id="numero-liberados">0</div>
-          <small class="text-muted">PIs Liberadas</small>
+          <small class="text-muted fw-semibold">PIs Liberadas</small>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card text-center py-3">
+        <div class="card text-center py-3 px-2">
+          <div class="resumo-card-icone">🚫</div>
           <div class="display-6 fw-bold text-danger" id="numero-bloqueados">0</div>
-          <small class="text-muted">PIs Bloqueadas</small>
+          <small class="text-muted fw-semibold">PIs Bloqueadas</small>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card text-center py-3">
+        <div class="card text-center py-3 px-2">
+          <div class="resumo-card-icone">📋</div>
           <div class="display-6 fw-bold text-warning" id="numero-total">0</div>
-          <small class="text-muted">PIs Ativas</small>
+          <small class="text-muted fw-semibold">PIs em Andamento</small>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card text-center py-3">
+        <div class="card text-center py-3 px-2">
+          <div class="resumo-card-icone">🏁</div>
           <div class="display-6 fw-bold text-secondary" id="numero-concluidas">0</div>
-          <small class="text-muted">Concluídas</small>
+          <small class="text-muted fw-semibold">PIs Concluídas</small>
         </div>
       </div>
     </div>
@@ -59,8 +63,6 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="/JS/admin.js"></script>
-  <script>
-    if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/sw.js") }
-  </script>
+  <script>if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/sw.js") }</script>
 </body>
 </html>
