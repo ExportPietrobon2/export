@@ -556,6 +556,12 @@ app.delete('/api/estoque/entradas/:id', autenticar(['admin', 'deposito']), async
   res.json({ ok: true })
 })
 
+app.patch('/api/estoque/entradas/:id/produto', autenticar(['admin', 'almoxarifado']), async (req, res) => {
+  const { produto } = req.body
+  await pool.query('UPDATE estoque_insumos SET produto = ? WHERE id = ?', [produto || null, req.params.id])
+  res.json({ ok: true })
+})
+
 app.patch('/api/estoque/vinculos/:id', autenticar(['admin', 'almoxarifado']), async (req, res) => {
   const { pi_id, embalagem_kg, rotulo_kg, pallet_caixas } = req.body
 

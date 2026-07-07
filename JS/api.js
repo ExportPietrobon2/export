@@ -86,6 +86,7 @@ export const api = {
     editarVinculo: (id, dados) => requisitar('PATCH', `/api/estoque/vinculos/${id}`, dados),
     deletarVinculo: (id) => requisitar('DELETE', `/api/estoque/vinculos/${id}`),
     deletarEntrada: (id) => requisitar('DELETE', `/api/estoque/entradas/${id}`),
+    editarProdutoEntrada: (id, produto) => requisitar('PATCH', `/api/estoque/entradas/${id}/produto`, { produto }),
     registrarEntrada: (produto, embalagem_kg, rotulo_kg, pallet_caixas, fotoProduto, fotoNota) => {
       const formData = new FormData()
       formData.append('produto', produto)

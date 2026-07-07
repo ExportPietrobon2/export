@@ -243,7 +243,7 @@ async function carregarRecebimentos() {
   const container = document.getElementById('conteudo-recebimentos')
   container.innerHTML = '<p class="text-muted">Carregando...</p>'
 
-  // Mostrar entradas do estoque geral (B2) com produto
+  // Mostrar entradas do estoque geral (B2) com produto + botão editar nome
   const entradas = await api.estoque.historico()
   if (entradas && entradas.length) {
     const secao = document.createElement('div')
@@ -253,11 +253,19 @@ async function carregarRecebimentos() {
       ${entradas.map((e) => {
         const data = new Date(e.criado_em).toLocaleString('pt-BR')
         return `
-          <div class="border rounded-3 p-3 mb-2 bg-light">
-            <div class="d-flex justify-content-between mb-1">
+          <div class="border rounded-3 p-3 mb-2 bg-light" id="rec-entrada-${e.id}">
+            <div class="d-flex justify-content-between align-items-start mb-1 flex-wrap gap-1">
               <span class="small text-muted">${data}</span>
+              ${!window._convidado ? `<button class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.75rem;border-radius:8px" onclick="editarProdutoEntrada(${e.id}, '${(e.produto || '').replace(/'/g, "\'")}')">✏️ ${e.produto ? 'Editar produto' : 'Adicionar produto'}</button>` : ''}
             </div>
-            ${e.produto ? `<div class="fw-semibold small mb-1">📦 ${e.produto}</div>` : ''}
+            <div id="rec-produto-label-${e.id}" class="${e.produto ? 'fw-semibold small mb-1' : 'text-muted small fst-italic mb-1'}">${e.produto || 'Produto não informado'}</div>
+            <div id="rec-produto-form-${e.id}" style="display:none" class="mb-2">
+              <div class="d-flex gap-2">
+                <input type="text" id="rec-produto-input-${e.id}" class="form-control form-control-sm" value="${e.produto || ''}" placeholder="Nome do produto">
+                <button class="btn btn-sm btn-pietrobon px-3" onclick="salvarProdutoEntrada(${e.id})">✔</button>
+                <button class="btn btn-sm btn-outline-secondary px-3" onclick="cancelarProdutoEntrada(${e.id})">✕</button>
+              </div>
+            </div>
             <div class="d-flex gap-2 flex-wrap">
               ${e.embalagem_kg > 0 ? `<span class="badge bg-primary">📦 ${e.embalagem_kg} kg embalagem</span>` : ''}
               ${e.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${e.rotulo_kg} kg rótulo</span>` : ''}
@@ -272,6 +280,44 @@ async function carregarRecebimentos() {
       }).join('')}
     `
     container.appendChild(secao)
+
+    window.editarProdutoEntrada = function(id, produtoAtual) {
+      document.getElementById(`rec-produto-label-${id}`).style.display = 'none'
+      document.getElementById(`rec-produto-form-${id}`).style.display = 'block'
+      const input = document.getElementById(`rec-produto-input-${id}`)
+      input.focus()
+      input.select()
+    }
+
+    window.cancelarProdutoEntrada = function(id) {
+      document.getElementById(`rec-produto-label-${id}`).style.display = ''
+      document.getElementById(`rec-produto-form-${id}`).style.display = 'none'
+    }
+
+    window.salvarProdutoEntrada = async function(id) {
+      const input = document.getElementById(`rec-produto-input-${id}`)
+      const valor = input.value.trim()
+      const btn = input.nextElementSibling
+      btn.disabled = true
+      btn.textContent = '...'
+
+      const resultado = await api.estoque.editarProdutoEntrada(id, valor)
+      if (resultado?.erro) {
+        alert('Erro ao salvar.')
+        btn.disabled = false
+        btn.textContent = '✔'
+        return
+      }
+
+      const label = document.getElementById(`rec-produto-label-${id}`)
+      label.textContent = valor || 'Produto não informado'
+      label.className = valor ? 'fw-semibold small mb-1' : 'text-muted small fst-italic mb-1'
+      cancelarProdutoEntrada(id)
+
+      // Atualizar botão também
+      const btnEditar = document.querySelector(`#rec-entrada-${id} .btn-outline-primary`)
+      if (btnEditar) btnEditar.textContent = valor ? '✏️ Editar produto' : '✏️ Adicionar produto'
+    }
   }
 
   const pis = await api.recebimentos.pendentes()

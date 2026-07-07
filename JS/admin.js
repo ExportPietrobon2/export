@@ -77,6 +77,33 @@ function renderAlmoxarifado(produtos) {
   }).join('')
 }
 
+// ── Seção 0: Todas as entradas B2 (visão geral) ─────────────────────────────
+function renderEntradasB2Geral(entradas) {
+  if (!entradas || entradas.length === 0) {
+    return '<p class="text-muted fst-italic small">Nenhuma entrada registrada pelo B2.</p>'
+  }
+  return entradas.map((e) => {
+    const data = new Date(e.criado_em).toLocaleString('pt-BR')
+    return `
+      <div class="border rounded-3 p-3 mb-2 bg-light">
+        <div class="d-flex justify-content-between flex-wrap gap-1 mb-1">
+          <span class="${e.produto ? 'fw-semibold small' : 'text-muted small fst-italic'}">${e.produto || 'Produto não informado'}</span>
+          <span class="small text-muted">${data}</span>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          ${e.embalagem_kg > 0 ? `<span class="badge bg-primary">📦 ${e.embalagem_kg} kg emb.</span>` : ''}
+          ${e.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${e.rotulo_kg} kg rót.</span>` : ''}
+          ${e.pallet_caixas > 0 ? `<span class="badge bg-secondary">🪵 ${e.pallet_caixas} pallet(s)</span>` : ''}
+        </div>
+        ${e.foto_url || e.foto_nota_url ? `
+          <div class="d-flex gap-2 mt-2 flex-wrap">
+            ${e.foto_url ? `<a href="${e.foto_url}" target="_blank"><img src="${e.foto_url}" class="foto-detalhe-img rounded-2" alt="Foto produto"></a>` : ''}
+            ${e.foto_nota_url ? `<a href="${e.foto_nota_url}" target="_blank"><img src="${e.foto_nota_url}" class="foto-detalhe-img rounded-2" alt="Foto nota"></a>` : ''}
+          </div>` : ''}
+      </div>`
+  }).join('')
+}
+
 // ── Seção 2: Estoque geral vinculado ─────────────────────────────────────────
 function renderVinculosEstoque(vinculos) {
   if (!vinculos || vinculos.length === 0) {
@@ -238,8 +265,25 @@ async function carregar() {
 
   containerPis.innerHTML = ''
 
+  // Seção: Todas as entradas B2
+  const entradas = await api.estoque.historico()
+  if (entradas && entradas.length) {
+    const cardEntradas = document.createElement('div')
+    cardEntradas.className = 'card border-0 shadow-sm mb-4'
+    cardEntradas.innerHTML = `
+      <div class="card-body">
+        <div class="secao-titulo-card mb-3">🚚 Todas as Entradas do B2</div>
+        ${renderEntradasB2Geral(entradas)}
+      </div>
+    `
+    containerPis.appendChild(cardEntradas)
+  }
+
   if (!pedidos.length) {
-    containerPis.innerHTML = '<p class="text-muted fst-italic">Nenhuma PI cadastrada.</p>'
+    const vazio = document.createElement('p')
+    vazio.className = 'text-muted fst-italic'
+    vazio.textContent = 'Nenhuma PI cadastrada.'
+    containerPis.appendChild(vazio)
     return
   }
 
