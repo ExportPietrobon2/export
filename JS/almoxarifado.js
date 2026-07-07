@@ -318,7 +318,7 @@ async function carregarRecebimentos() {
       if (btnEditar) btnEditar.textContent = valor ? '✏️ Editar produto' : '✏️ Adicionar produto'
     }
   }
-
+}
 
 document.querySelectorAll('[data-aba]').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -555,5 +555,4 @@ async function carregarEstoqueGeral() {
     }
     carregarEstoqueGeral()
   }
-}
 }
