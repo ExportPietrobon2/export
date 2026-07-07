@@ -243,13 +243,45 @@ async function carregarRecebimentos() {
   const container = document.getElementById('conteudo-recebimentos')
   container.innerHTML = '<p class="text-muted">Carregando...</p>'
 
-  const pis = await api.recebimentos.pendentes()
-  if (!pis || !pis.length) {
-    container.innerHTML = '<p class="text-muted fst-italic">Nenhum recebimento registrado.</p>'
-    return
+  // Mostrar entradas do estoque geral (B2) com produto
+  const entradas = await api.estoque.historico()
+  if (entradas && entradas.length) {
+    const secao = document.createElement('div')
+    secao.className = 'mb-4'
+    secao.innerHTML = `
+      <h6 class="fw-bold text-muted mb-2">📦 Entradas registradas pelo B2</h6>
+      ${entradas.map((e) => {
+        const data = new Date(e.criado_em).toLocaleString('pt-BR')
+        return `
+          <div class="border rounded-3 p-3 mb-2 bg-light">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="small text-muted">${data}</span>
+            </div>
+            ${e.produto ? `<div class="fw-semibold small mb-1">📦 ${e.produto}</div>` : ''}
+            <div class="d-flex gap-2 flex-wrap">
+              ${e.embalagem_kg > 0 ? `<span class="badge bg-primary">📦 ${e.embalagem_kg} kg embalagem</span>` : ''}
+              ${e.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${e.rotulo_kg} kg rótulo</span>` : ''}
+              ${e.pallet_caixas > 0 ? `<span class="badge bg-secondary">🪵 ${e.pallet_caixas} pallet(s) caixa</span>` : ''}
+            </div>
+            ${e.foto_url || e.foto_nota_url ? `
+              <div class="d-flex gap-2 mt-2 flex-wrap">
+                ${e.foto_url ? `<a href="${e.foto_url}" target="_blank"><img src="${e.foto_url}" class="foto-detalhe-img rounded-2" alt="Foto produto"></a>` : ''}
+                ${e.foto_nota_url ? `<a href="${e.foto_nota_url}" target="_blank"><img src="${e.foto_nota_url}" class="foto-detalhe-img rounded-2" alt="Foto nota"></a>` : ''}
+              </div>` : ''}
+          </div>`
+      }).join('')}
+    `
+    container.appendChild(secao)
   }
 
-  container.innerHTML = ''
+  const pis = await api.recebimentos.pendentes()
+  if (!pis || !pis.length) {
+    const vazio = document.createElement('p')
+    vazio.className = 'text-muted fst-italic'
+    vazio.textContent = 'Nenhum recebimento por PI registrado.'
+    container.appendChild(vazio)
+    return
+  }
 
   pis.forEach((pi) => {
     const card = document.createElement('div')
@@ -522,6 +554,7 @@ function renderVinculo(v, pis) {
         </div>
       </div>
 
+      ${v.produto ? `<div class="fw-semibold small mb-1">📦 ${v.produto}</div>` : ''}
       <div class="view-vinculo-${v.id} d-flex gap-2 flex-wrap">
         ${v.embalagem_kg > 0 ? `<span class="badge bg-primary">📦 ${v.embalagem_kg} kg emb.</span>` : ''}
         ${v.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${v.rotulo_kg} kg rót.</span>` : ''}
@@ -529,6 +562,10 @@ function renderVinculo(v, pis) {
       </div>
 
       <div class="edit-vinculo-${v.id}" style="display:none">
+        <div class="mb-2">
+          <label class="form-label small fw-semibold mb-1">Produto (opcional)</label>
+          <input type="text" class="form-control form-control-sm edit-prod-${v.id}" value="${v.produto || ''}" placeholder="Ex: Bala Dura Cola 34x250g">
+        </div>
         <div class="mb-2">
           <label class="form-label small fw-semibold mb-1">PI</label>
           <select class="form-select form-select-sm edit-pi-${v.id}">${opcoesPI}</select>
@@ -582,7 +619,8 @@ function adicionarListenersVinculos(vinculos, pis) {
     btn.disabled = true
     btn.textContent = 'Salvando...'
 
-    const resultado = await api.estoque.editarVinculo(id, { pi_id: piId, embalagem_kg: embalagem, rotulo_kg: rotulo, pallet_caixas: pallet })
+    const produto = document.querySelector(`.edit-prod-${id}`)?.value?.trim() || ''
+    const resultado = await api.estoque.editarVinculo(id, { pi_id: piId, produto, embalagem_kg: embalagem, rotulo_kg: rotulo, pallet_caixas: pallet })
     if (resultado?.erro) {
       alert(resultado.erro)
       btn.disabled = false

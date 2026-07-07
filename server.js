@@ -494,7 +494,7 @@ app.get('/api/estoque/vinculos', autenticar(['admin', 'almoxarifado', 'convidado
 })
 
 app.post('/api/estoque/vincular', autenticar(['admin', 'almoxarifado']), async (req, res) => {
-  const { pi_id, embalagem_kg, rotulo_kg, pallet_caixas } = req.body
+  const { pi_id, produto, embalagem_kg, rotulo_kg, pallet_caixas } = req.body
 
   // Verificar saldo disponível
   const [[entradas]] = await pool.query(
@@ -512,8 +512,8 @@ app.post('/api/estoque/vincular', autenticar(['admin', 'almoxarifado']), async (
   if ((parseInt(pallet_caixas) || 0) > saldoPal) return res.status(400).json({ erro: `Saldo insuficiente de pallets. Disponível: ${saldoPal}` })
 
   await pool.query(
-    'INSERT INTO vinculos_insumos (pi_id, embalagem_kg, rotulo_kg, pallet_caixas) VALUES (?, ?, ?, ?)',
-    [pi_id, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0]
+    'INSERT INTO vinculos_insumos (pi_id, produto, embalagem_kg, rotulo_kg, pallet_caixas) VALUES (?, ?, ?, ?, ?)',
+    [pi_id, produto || null, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0]
   )
 
   const [[pi]] = await pool.query('SELECT numero_pi, cliente FROM pedidos WHERE id = ?', [pi_id])
@@ -558,9 +558,10 @@ app.patch('/api/estoque/vinculos/:id', autenticar(['admin', 'almoxarifado']), as
   if ((parseFloat(rotulo_kg) || 0) > saldoRot) return res.status(400).json({ erro: `Saldo insuficiente de rótulo. Disponível: ${saldoRot} kg` })
   if ((parseInt(pallet_caixas) || 0) > saldoPal) return res.status(400).json({ erro: `Saldo insuficiente de pallets. Disponível: ${saldoPal}` })
 
+  const { produto } = req.body
   await pool.query(
-    'UPDATE vinculos_insumos SET pi_id = ?, embalagem_kg = ?, rotulo_kg = ?, pallet_caixas = ? WHERE id = ?',
-    [pi_id, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0, req.params.id]
+    'UPDATE vinculos_insumos SET pi_id = ?, produto = ?, embalagem_kg = ?, rotulo_kg = ?, pallet_caixas = ? WHERE id = ?',
+    [pi_id, produto || null, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0, req.params.id]
   )
   res.json({ ok: true })
 })
