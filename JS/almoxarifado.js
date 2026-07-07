@@ -400,210 +400,190 @@ async function iniciar() {
 
 iniciar()
 // =============================================
-// ESTOQUE GERAL (entradas B2 + vínculos PI)
+// ESTOQUE GERAL — entradas B2 com saldo por entrada
 // =============================================
 
 async function carregarEstoqueGeral() {
   const container = document.getElementById('conteudo-estoque-geral')
   container.innerHTML = '<p class="text-muted">Carregando...</p>'
 
-  const [saldo, pis, vinculos] = await Promise.all([
-    api.estoque.saldo(),
-    api.pedidos.listar(),
-    api.estoque.vinculos()
+  const [entradas, vinculos, pis] = await Promise.all([
+    api.estoque.historico(),
+    api.estoque.vinculos(),
+    api.pedidos.listar()
   ])
 
-  if (!saldo) { container.innerHTML = '<p class="text-danger">Erro ao carregar.</p>'; return }
-
+  if (!entradas) { container.innerHTML = '<p class="text-danger">Erro ao carregar.</p>'; return }
   container.innerHTML = ''
 
-  // --- Saldo disponível ---
-  const cardSaldo = document.createElement('div')
-  cardSaldo.className = 'card border-0 shadow-sm mb-4'
-  cardSaldo.innerHTML = `
-    <div class="card-body">
-      <h5 class="fw-bold mb-3">📊 Saldo Disponível</h5>
-      <div class="row g-3">
-        <div class="col-4">
-          <div class="card-insumo-almox h-100 text-center">
-            <h4>Embalagem</h4>
-            <div class="fs-4 fw-bold ${saldo.embalagem_kg > 0 ? 'text-success' : 'text-danger'}">${saldo.embalagem_kg} kg</div>
-          </div>
-        </div>
-        <div class="col-4">
-          <div class="card-insumo-almox h-100 text-center">
-            <h4>Rótulo</h4>
-            <div class="fs-4 fw-bold ${saldo.rotulo_kg > 0 ? 'text-success' : 'text-danger'}">${saldo.rotulo_kg} kg</div>
-          </div>
-        </div>
-        <div class="col-4">
-          <div class="card-insumo-almox h-100 text-center">
-            <h4>Pallets Caixa</h4>
-            <div class="fs-4 fw-bold ${saldo.pallet_caixas > 0 ? 'text-success' : 'text-danger'}">${saldo.pallet_caixas}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `
-  container.appendChild(cardSaldo)
+  if (!entradas.length) {
+    container.innerHTML = '<p class="text-muted fst-italic">Nenhuma entrada registrada pelo B2.</p>'
+    return
+  }
 
-  if (window._convidado) return
+  // Calcular quanto de cada entrada já foi vinculado
+  entradas.forEach((e) => {
+    const vincsEntrada = (vinculos || []).filter((v) => v.entrada_id === e.id)
+    e.vinculado_emb = vincsEntrada.reduce((s, v) => s + parseFloat(v.embalagem_kg || 0), 0)
+    e.vinculado_rot = vincsEntrada.reduce((s, v) => s + parseFloat(v.rotulo_kg || 0), 0)
+    e.vinculado_pal = vincsEntrada.reduce((s, v) => s + parseInt(v.pallet_caixas || 0), 0)
+    e.saldo_emb = Math.max(0, parseFloat(e.embalagem_kg) - e.vinculado_emb)
+    e.saldo_rot = Math.max(0, parseFloat(e.rotulo_kg) - e.vinculado_rot)
+    e.saldo_pal = Math.max(0, parseInt(e.pallet_caixas) - e.vinculado_pal)
+    e._vinculos = vincsEntrada
+  })
 
-  // --- Vincular ao PI ---
-  const cardVincular = document.createElement('div')
-  cardVincular.className = 'card border-0 shadow-sm mb-4'
-  cardVincular.innerHTML = `
-    <div class="card-body">
-      <h5 class="fw-bold mb-3">🔗 Vincular Estoque a uma PI</h5>
-      <div class="mb-3">
-        <label class="form-label fw-semibold small">PI</label>
-        <select id="select-pi-vinculo" class="form-select">
-          <option value="">Selecione a PI</option>
-          ${(pis || []).map((p) => `<option value="${p.id}">PI ${p.numero_pi}${p.cliente ? ' — ' + p.cliente : ''}</option>`).join('')}
-        </select>
-      </div>
-      <div class="row g-3 mb-3">
-        <div class="col-12 col-md-4">
-          <label class="form-label fw-semibold small">Embalagem (kg)</label>
-          <input type="number" id="vinc-embalagem" class="form-control" placeholder="0" min="0" step="any">
-        </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label fw-semibold small">Rótulo (kg)</label>
-          <input type="number" id="vinc-rotulo" class="form-control" placeholder="0" min="0" step="any">
-        </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label fw-semibold small">Pallets de caixa</label>
-          <input type="number" id="vinc-pallet" class="form-control" placeholder="0" min="0" step="1">
-        </div>
-      </div>
-      <button class="btn btn-pietrobon w-100" id="btn-vincular">🔗 Vincular</button>
-    </div>
-  `
-  container.appendChild(cardVincular)
+  entradas.forEach((e) => {
+    const data = new Date(e.criado_em).toLocaleString('pt-BR')
+    const totalVinculado = e.vinculado_emb + e.vinculado_rot + e.vinculado_pal
+    const totalEntrada = parseFloat(e.embalagem_kg) + parseFloat(e.rotulo_kg) + parseInt(e.pallet_caixas)
+    const totDisp = e.saldo_emb + e.saldo_rot + e.saldo_pal
+    const statusCor = totDisp === 0 ? 'border-success' : totalVinculado > 0 ? 'border-warning' : 'border-secondary'
 
-  document.getElementById('btn-vincular').addEventListener('click', async () => {
-    const piId = document.getElementById('select-pi-vinculo').value
-    const embalagem = parseFloat(document.getElementById('vinc-embalagem').value) || 0
-    const rotulo = parseFloat(document.getElementById('vinc-rotulo').value) || 0
-    const pallet = parseInt(document.getElementById('vinc-pallet').value) || 0
+    const card = document.createElement('div')
+    card.className = `card border-2 ${statusCor} mb-3`
+    card.id = `entrada-card-${e.id}`
+
+    // Vínculos já feitos para essa entrada
+    const vincsHtml = e._vinculos.length ? `
+      <div class="mt-2 pt-2 border-top">
+        <div class="small fw-semibold text-muted mb-1">Vínculos:</div>
+        ${e._vinculos.map((v) => `
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-1" id="vinculo-${v.id}">
+            <div class="d-flex gap-1 flex-wrap align-items-center">
+              <span class="badge bg-danger">PI ${v.numero_pi}</span>
+              ${v.cliente ? `<span class="badge bg-secondary">${v.cliente}</span>` : ''}
+              ${v.embalagem_kg > 0 ? `<span class="badge bg-primary">📦 ${v.embalagem_kg} kg</span>` : ''}
+              ${v.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${v.rotulo_kg} kg</span>` : ''}
+              ${v.pallet_caixas > 0 ? `<span class="badge bg-secondary">🪵 ${v.pallet_caixas} pallet(s)</span>` : ''}
+            </div>
+            ${!window._convidado ? `
+              <div class="d-flex gap-1">
+                <button class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.75rem;border-radius:8px" onclick="toggleEditarVinculo(${v.id}, ${e.id})">✏️</button>
+                <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.75rem;border-radius:8px" onclick="deletarVinculo(${v.id})">🗑</button>
+              </div>` : ''}
+          </div>
+          <div class="edit-vinculo-${v.id} mb-2" style="display:none">
+            <div class="row g-2 mb-2">
+              <div class="col-12">
+                <select class="form-select form-select-sm edit-pi-${v.id}">
+                  ${(pis || []).map((p) => `<option value="${p.id}" ${p.id == v.pi_id ? 'selected' : ''}>PI ${p.numero_pi}${p.cliente ? ' — ' + p.cliente : ''}</option>`).join('')}
+                </select>
+              </div>
+              ${e.embalagem_kg > 0 ? `<div class="col-4"><label class="form-label small mb-0">Emb. (kg)</label><input type="number" class="form-control form-control-sm edit-emb-${v.id}" value="${v.embalagem_kg}" min="0" step="any"></div>` : ''}
+              ${e.rotulo_kg > 0 ? `<div class="col-4"><label class="form-label small mb-0">Rót. (kg)</label><input type="number" class="form-control form-control-sm edit-rot-${v.id}" value="${v.rotulo_kg}" min="0" step="any"></div>` : ''}
+              ${e.pallet_caixas > 0 ? `<div class="col-4"><label class="form-label small mb-0">Pallets</label><input type="number" class="form-control form-control-sm edit-pal-${v.id}" value="${v.pallet_caixas}" min="0" step="1"></div>` : ''}
+            </div>
+            <button class="btn btn-sm btn-pietrobon w-100" onclick="salvarEdicaoVinculo(${v.id})">💾 Salvar</button>
+          </div>`
+        ).join('')}
+      </div>` : ''
+
+    card.innerHTML = `
+      <div class="card-body pb-2">
+        <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-1">
+          <div>
+            ${e.produto ? `<div class="fw-bold mb-1">📦 ${e.produto}</div>` : ''}
+            <div class="small text-muted">${data}</div>
+          </div>
+          <span class="badge ${totDisp === 0 ? 'bg-success' : totalVinculado > 0 ? 'bg-warning text-dark' : 'bg-secondary'}">
+            ${totDisp === 0 ? '✔ Totalmente vinculado' : totalVinculado > 0 ? '⚠ Parcialmente vinculado' : '○ Não vinculado'}
+          </span>
+        </div>
+
+        <div class="row g-2 mb-2">
+          ${e.embalagem_kg > 0 ? `
+            <div class="col-auto">
+              <div class="card-insumo-almox px-3 py-2 text-center">
+                <div class="small text-muted">Embalagem</div>
+                <div class="fw-bold">${e.embalagem_kg} kg</div>
+                ${e.saldo_emb < parseFloat(e.embalagem_kg) ? `<div class="small ${e.saldo_emb === 0 ? 'text-success' : 'text-warning fw-semibold'}">Saldo: ${e.saldo_emb} kg</div>` : ''}
+              </div>
+            </div>` : ''}
+          ${e.rotulo_kg > 0 ? `
+            <div class="col-auto">
+              <div class="card-insumo-almox px-3 py-2 text-center">
+                <div class="small text-muted">Rótulo</div>
+                <div class="fw-bold">${e.rotulo_kg} kg</div>
+                ${e.saldo_rot < parseFloat(e.rotulo_kg) ? `<div class="small ${e.saldo_rot === 0 ? 'text-success' : 'text-warning fw-semibold'}">Saldo: ${e.saldo_rot} kg</div>` : ''}
+              </div>
+            </div>` : ''}
+          ${e.pallet_caixas > 0 ? `
+            <div class="col-auto">
+              <div class="card-insumo-almox px-3 py-2 text-center">
+                <div class="small text-muted">Pallets</div>
+                <div class="fw-bold">${e.pallet_caixas}</div>
+                ${e.saldo_pal < parseInt(e.pallet_caixas) ? `<div class="small ${e.saldo_pal === 0 ? 'text-success' : 'text-warning fw-semibold'}">Saldo: ${e.saldo_pal}</div>` : ''}
+              </div>
+            </div>` : ''}
+        </div>
+
+        ${vincsHtml}
+
+        ${!window._convidado && totDisp > 0 ? `
+          <button class="btn btn-sm btn-outline-danger mt-2 w-100" style="border-radius:10px" onclick="toggleFormVincular(${e.id})">
+            🔗 Vincular a uma PI
+          </button>
+          <div id="form-vincular-${e.id}" style="display:none" class="mt-2 border rounded-3 p-3 bg-light">
+            <div class="mb-2">
+              <label class="form-label small fw-semibold mb-1">PI</label>
+              <select id="vinc-pi-${e.id}" class="form-select form-select-sm">
+                <option value="">Selecione</option>
+                ${(pis || []).map((p) => `<option value="${p.id}">PI ${p.numero_pi}${p.cliente ? ' — ' + p.cliente : ''}</option>`).join('')}
+              </select>
+            </div>
+            <div class="row g-2 mb-2">
+              ${e.saldo_emb > 0 ? `<div class="col-4"><label class="form-label small mb-0">Emb. (kg) <span class="text-muted">máx ${e.saldo_emb}</span></label><input type="number" id="vinc-emb-${e.id}" class="form-control form-control-sm" placeholder="0" min="0" max="${e.saldo_emb}" step="any"></div>` : ''}
+              ${e.saldo_rot > 0 ? `<div class="col-4"><label class="form-label small mb-0">Rót. (kg) <span class="text-muted">máx ${e.saldo_rot}</span></label><input type="number" id="vinc-rot-${e.id}" class="form-control form-control-sm" placeholder="0" min="0" max="${e.saldo_rot}" step="any"></div>` : ''}
+              ${e.saldo_pal > 0 ? `<div class="col-4"><label class="form-label small mb-0">Pallets <span class="text-muted">máx ${e.saldo_pal}</span></label><input type="number" id="vinc-pal-${e.id}" class="form-control form-control-sm" placeholder="0" min="0" max="${e.saldo_pal}" step="1"></div>` : ''}
+            </div>
+            <button class="btn btn-pietrobon btn-sm w-100" onclick="confirmarVinculo(${e.id})">✔ Confirmar Vínculo</button>
+          </div>` : ''}
+      </div>
+    `
+    container.appendChild(card)
+  })
+
+  // Listeners globais
+  window.toggleFormVincular = function(entradaId) {
+    const form = document.getElementById(`form-vincular-${entradaId}`)
+    if (!form) return
+    form.style.display = form.style.display === 'none' ? 'block' : 'none'
+  }
+
+  window.confirmarVinculo = async function(entradaId) {
+    const piId = document.getElementById(`vinc-pi-${entradaId}`)?.value
+    const embalagem = parseFloat(document.getElementById(`vinc-emb-${entradaId}`)?.value) || 0
+    const rotulo = parseFloat(document.getElementById(`vinc-rot-${entradaId}`)?.value) || 0
+    const pallet = parseInt(document.getElementById(`vinc-pal-${entradaId}`)?.value) || 0
 
     if (!piId) { alert('Selecione uma PI.'); return }
     if (embalagem === 0 && rotulo === 0 && pallet === 0) { alert('Informe ao menos uma quantidade.'); return }
 
-    const btn = document.getElementById('btn-vincular')
+    const btn = document.querySelector(`#form-vincular-${entradaId} .btn-pietrobon`)
     btn.disabled = true
     btn.textContent = 'Salvando...'
 
-    const resultado = await api.estoque.vincular({ pi_id: piId, embalagem_kg: embalagem, rotulo_kg: rotulo, pallet_caixas: pallet })
+    const resultado = await api.estoque.vincular({ entrada_id: entradaId, pi_id: piId, embalagem_kg: embalagem, rotulo_kg: rotulo, pallet_caixas: pallet })
     if (resultado?.erro) {
       alert(resultado.erro)
       btn.disabled = false
-      btn.textContent = '🔗 Vincular'
+      btn.textContent = '✔ Confirmar Vínculo'
       return
     }
-
-    document.getElementById('vinc-embalagem').value = ''
-    document.getElementById('vinc-rotulo').value = ''
-    document.getElementById('vinc-pallet').value = ''
-    document.getElementById('select-pi-vinculo').value = ''
-    btn.textContent = '✔ Vinculado!'
-    btn.style.background = 'var(--green-ok)'
-    setTimeout(() => {
-      btn.disabled = false
-      btn.textContent = '🔗 Vincular'
-      btn.style.background = ''
-    }, 1800)
-
     carregarEstoqueGeral()
-  })
-
-  // --- Histórico de vínculos ---
-  if (vinculos && vinculos.length) {
-    const cardHistorico = document.createElement('div')
-    cardHistorico.className = 'card border-0 shadow-sm mb-4'
-    cardHistorico.innerHTML = `
-      <div class="card-body">
-        <h5 class="fw-bold mb-3">📋 Vínculos Registrados</h5>
-        <div id="lista-vinculos">
-        ${vinculos.map((v) => renderVinculo(v, pis)).join('')}
-        </div>
-      </div>
-    `
-    container.appendChild(cardHistorico)
-    adicionarListenersVinculos(vinculos, pis)
   }
-}
 
-function renderVinculo(v, pis) {
-  const data = new Date(v.criado_em).toLocaleString('pt-BR')
-  const opcoesPI = (pis || []).map((p) =>
-    `<option value="${p.id}" ${p.id == v.pi_id ? 'selected' : ''}>PI ${p.numero_pi}${p.cliente ? ' — ' + p.cliente : ''}</option>`
-  ).join('')
-
-  return `
-    <div class="border rounded-3 p-3 mb-2 bg-light" id="vinculo-${v.id}">
-      <div class="d-flex justify-content-between align-items-start flex-wrap gap-1 mb-2">
-        <div>
-          <span class="badge bg-danger me-1">PI ${v.numero_pi}</span>
-          ${v.cliente ? `<span class="badge bg-secondary">${v.cliente}</span>` : ''}
-        </div>
-        <div class="d-flex gap-1">
-          <span class="small text-muted me-2">${data}</span>
-          <button class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.75rem;border-radius:8px" onclick="toggleEditarVinculo(${v.id})">✏️ Editar</button>
-          <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.75rem;border-radius:8px" onclick="deletarVinculo(${v.id})">🗑 Apagar</button>
-        </div>
-      </div>
-
-      ${v.produto ? `<div class="fw-semibold small mb-1">📦 ${v.produto}</div>` : ''}
-      <div class="view-vinculo-${v.id} d-flex gap-2 flex-wrap">
-        ${v.embalagem_kg > 0 ? `<span class="badge bg-primary">📦 ${v.embalagem_kg} kg emb.</span>` : ''}
-        ${v.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${v.rotulo_kg} kg rót.</span>` : ''}
-        ${v.pallet_caixas > 0 ? `<span class="badge bg-secondary">🪵 ${v.pallet_caixas} pallet(s)</span>` : ''}
-      </div>
-
-      <div class="edit-vinculo-${v.id}" style="display:none">
-        <div class="mb-2">
-          <label class="form-label small fw-semibold mb-1">Produto (opcional)</label>
-          <input type="text" class="form-control form-control-sm edit-prod-${v.id}" value="${v.produto || ''}" placeholder="Ex: Bala Dura Cola 34x250g">
-        </div>
-        <div class="mb-2">
-          <label class="form-label small fw-semibold mb-1">PI</label>
-          <select class="form-select form-select-sm edit-pi-${v.id}">${opcoesPI}</select>
-        </div>
-        <div class="row g-2 mb-2">
-          <div class="col-4">
-            <label class="form-label small fw-semibold mb-1">Embalagem (kg)</label>
-            <input type="number" class="form-control form-control-sm edit-emb-${v.id}" value="${v.embalagem_kg}" min="0" step="any">
-          </div>
-          <div class="col-4">
-            <label class="form-label small fw-semibold mb-1">Rótulo (kg)</label>
-            <input type="number" class="form-control form-control-sm edit-rot-${v.id}" value="${v.rotulo_kg}" min="0" step="any">
-          </div>
-          <div class="col-4">
-            <label class="form-label small fw-semibold mb-1">Pallets</label>
-            <input type="number" class="form-control form-control-sm edit-pal-${v.id}" value="${v.pallet_caixas}" min="0" step="1">
-          </div>
-        </div>
-        <button class="btn btn-sm btn-pietrobon w-100" onclick="salvarEdicaoVinculo(${v.id})">💾 Salvar</button>
-      </div>
-    </div>`
-}
-
-function adicionarListenersVinculos(vinculos, pis) {
   window.toggleEditarVinculo = function(id) {
-    const view = document.querySelector(`.view-vinculo-${id}`)
     const edit = document.querySelector(`.edit-vinculo-${id}`)
-    if (!view || !edit) return
-    const editando = edit.style.display !== 'none'
-    view.style.display = editando ? 'flex' : 'none'
-    edit.style.display = editando ? 'none' : 'block'
+    if (!edit) return
+    edit.style.display = edit.style.display === 'none' ? 'block' : 'none'
   }
 
   window.deletarVinculo = async function(id) {
     if (!confirm('Apagar este vínculo?')) return
     const resultado = await api.estoque.deletarVinculo(id)
     if (resultado?.erro) { alert('Erro ao apagar.'); return }
-    document.getElementById(`vinculo-${id}`)?.remove()
     carregarEstoqueGeral()
   }
 
@@ -615,19 +595,17 @@ function adicionarListenersVinculos(vinculos, pis) {
 
     if (!piId) { alert('Selecione uma PI.'); return }
 
-    const btn = document.querySelector(`#vinculo-${id} .btn-pietrobon`)
+    const btn = document.querySelector(`.edit-vinculo-${id} .btn-pietrobon`)
     btn.disabled = true
     btn.textContent = 'Salvando...'
 
-    const produto = document.querySelector(`.edit-prod-${id}`)?.value?.trim() || ''
-    const resultado = await api.estoque.editarVinculo(id, { pi_id: piId, produto, embalagem_kg: embalagem, rotulo_kg: rotulo, pallet_caixas: pallet })
+    const resultado = await api.estoque.editarVinculo(id, { pi_id: piId, embalagem_kg: embalagem, rotulo_kg: rotulo, pallet_caixas: pallet })
     if (resultado?.erro) {
       alert(resultado.erro)
       btn.disabled = false
       btn.textContent = '💾 Salvar'
       return
     }
-
     carregarEstoqueGeral()
   }
 }

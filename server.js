@@ -494,26 +494,29 @@ app.get('/api/estoque/vinculos', autenticar(['admin', 'almoxarifado', 'convidado
 })
 
 app.post('/api/estoque/vincular', autenticar(['admin', 'almoxarifado']), async (req, res) => {
-  const { pi_id, produto, embalagem_kg, rotulo_kg, pallet_caixas } = req.body
+  const { entrada_id, pi_id, produto, embalagem_kg, rotulo_kg, pallet_caixas } = req.body
 
-  // Verificar saldo disponível
-  const [[entradas]] = await pool.query(
-    'SELECT COALESCE(SUM(embalagem_kg),0) as emb, COALESCE(SUM(rotulo_kg),0) as rot, COALESCE(SUM(pallet_caixas),0) as pal FROM estoque_insumos'
+  // Verificar saldo disponível da entrada específica
+  const [[entrada]] = await pool.query(
+    'SELECT embalagem_kg, rotulo_kg, pallet_caixas FROM estoque_insumos WHERE id = ?', [entrada_id]
   )
-  const [[vinculos]] = await pool.query(
-    'SELECT COALESCE(SUM(embalagem_kg),0) as emb, COALESCE(SUM(rotulo_kg),0) as rot, COALESCE(SUM(pallet_caixas),0) as pal FROM vinculos_insumos'
+  if (!entrada) return res.status(400).json({ erro: 'Entrada não encontrada.' })
+
+  const [[vinculados]] = await pool.query(
+    'SELECT COALESCE(SUM(embalagem_kg),0) as emb, COALESCE(SUM(rotulo_kg),0) as rot, COALESCE(SUM(pallet_caixas),0) as pal FROM vinculos_insumos WHERE entrada_id = ?',
+    [entrada_id]
   )
-  const saldoEmb = parseFloat(entradas.emb) - parseFloat(vinculos.emb)
-  const saldoRot = parseFloat(entradas.rot) - parseFloat(vinculos.rot)
-  const saldoPal = parseInt(entradas.pal) - parseInt(vinculos.pal)
+  const saldoEmb = parseFloat(entrada.embalagem_kg) - parseFloat(vinculados.emb)
+  const saldoRot = parseFloat(entrada.rotulo_kg) - parseFloat(vinculados.rot)
+  const saldoPal = parseInt(entrada.pallet_caixas) - parseInt(vinculados.pal)
 
   if ((parseFloat(embalagem_kg) || 0) > saldoEmb) return res.status(400).json({ erro: `Saldo insuficiente de embalagem. Disponível: ${saldoEmb} kg` })
   if ((parseFloat(rotulo_kg) || 0) > saldoRot) return res.status(400).json({ erro: `Saldo insuficiente de rótulo. Disponível: ${saldoRot} kg` })
   if ((parseInt(pallet_caixas) || 0) > saldoPal) return res.status(400).json({ erro: `Saldo insuficiente de pallets. Disponível: ${saldoPal}` })
 
   await pool.query(
-    'INSERT INTO vinculos_insumos (pi_id, produto, embalagem_kg, rotulo_kg, pallet_caixas) VALUES (?, ?, ?, ?, ?)',
-    [pi_id, produto || null, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0]
+    'INSERT INTO vinculos_insumos (entrada_id, pi_id, produto, embalagem_kg, rotulo_kg, pallet_caixas) VALUES (?, ?, ?, ?, ?, ?)',
+    [entrada_id, pi_id, produto || null, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0]
   )
 
   const [[pi]] = await pool.query('SELECT numero_pi, cliente FROM pedidos WHERE id = ?', [pi_id])
