@@ -15,13 +15,22 @@ async function requisitar(metodo, rota, corpo, formData) {
     opcoes.headers['Content-Type'] = 'application/json'
     opcoes.body = JSON.stringify(corpo)
   }
-  const resposta = await fetch(BASE + rota, opcoes)
-  if (resposta.status === 401) {
-    sessionStorage.removeItem('token')
-    window.location.href = '/index.html'
-    return null
+  try {
+    const resposta = await fetch(BASE + rota, opcoes)
+    if (resposta.status === 401) {
+      sessionStorage.removeItem('token')
+      window.location.href = '/index.html'
+      return null
+    }
+    if (!resposta.ok && resposta.status !== 400) {
+      console.error(`Erro ${resposta.status} em ${metodo} ${rota}`)
+      return { erro: `Erro de servidor (${resposta.status}). Tente novamente.` }
+    }
+    return resposta.json()
+  } catch (e) {
+    console.error('Erro de rede:', e)
+    return { erro: 'Sem conexão com o servidor. Verifique sua internet.' }
   }
-  return resposta.json()
 }
 
 export const api = {

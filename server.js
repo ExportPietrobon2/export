@@ -19,8 +19,8 @@ cloudinary.config({
 
 const upload = multer({ storage: multer.memoryStorage() })
 
-const EMAIL_TESTE = 'pietrobonexport2@gmail.com'
-const MODO_TESTE = true
+const EMAIL_TESTE = process.env.EMAIL_TESTE || 'pietrobonexport2@gmail.com'
+const MODO_TESTE = process.env.MODO_TESTE !== 'false'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -137,6 +137,20 @@ app.get('/api/pedidos/completo', autenticar(['admin']), async (req, res) => {
       [pedido.id]
     )
     pedido.recebimentos_b2 = recebimentos
+
+    // Entradas do estoque geral vinculadas a esta PI
+    const [vinculosEstoque] = await pool.query(
+      `SELECT v.*, e.produto as produto_entrada, e.embalagem_kg as entrada_emb,
+              e.rotulo_kg as entrada_rot, e.pallet_caixas as entrada_pal,
+              e.foto_url as entrada_foto, e.foto_nota_url as entrada_foto_nota,
+              e.criado_em as entrada_data
+       FROM vinculos_insumos v
+       JOIN estoque_insumos e ON e.id = v.entrada_id
+       WHERE v.pi_id = ?
+       ORDER BY v.criado_em DESC`,
+      [pedido.id]
+    )
+    pedido.vinculos_estoque = vinculosEstoque
   }
   res.json(pedidos)
 })

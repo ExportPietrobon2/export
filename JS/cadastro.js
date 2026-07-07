@@ -74,14 +74,62 @@ async function carregarPedidos() {
 }
 
 async function editarQuantidade(produtoId, quantidadeAtual) {
-  const novaQtd = prompt(`Nova quantidade (cx):`, quantidadeAtual)
-  if (!novaQtd || isNaN(novaQtd) || Number(novaQtd) <= 0) return
-  const resultado = await api.produtos.editarQuantidade(produtoId, novaQtd)
-  if (resultado?.erro) { alert('Erro ao atualizar quantidade.'); return }
-  const label = document.getElementById(`qtd-label-${produtoId}`)
-  if (label) label.textContent = formatarQuantidade(novaQtd)
   const btn = document.querySelector(`.btn-editar-qtd[data-produto-id="${produtoId}"]`)
-  if (btn) btn.dataset.quantidade = novaQtd
+  const label = document.getElementById(`qtd-label-${produtoId}`)
+  if (!btn || !label) return
+
+  // Substituir label por input inline
+  const wrapper = btn.closest('.d-flex')
+  if (wrapper.querySelector('.input-qtd-inline')) return // já aberto
+
+  const input = document.createElement('input')
+  input.type = 'number'
+  input.className = 'form-control form-control-sm input-qtd-inline'
+  input.style.cssText = 'width:90px;border-radius:8px;'
+  input.value = quantidadeAtual
+  input.min = '1'
+
+  const btnSalvar = document.createElement('button')
+  btnSalvar.className = 'btn btn-sm btn-pietrobon'
+  btnSalvar.style.cssText = 'border-radius:8px;padding:4px 10px;font-size:0.8rem;'
+  btnSalvar.textContent = '✔'
+
+  const btnCancelar = document.createElement('button')
+  btnCancelar.className = 'btn btn-sm btn-outline-secondary'
+  btnCancelar.style.cssText = 'border-radius:8px;padding:4px 10px;font-size:0.8rem;'
+  btnCancelar.textContent = '✕'
+
+  label.style.display = 'none'
+  btn.style.display = 'none'
+  wrapper.appendChild(input)
+  wrapper.appendChild(btnSalvar)
+  wrapper.appendChild(btnCancelar)
+  input.focus()
+  input.select()
+
+  const cancelar = () => {
+    input.remove()
+    btnSalvar.remove()
+    btnCancelar.remove()
+    label.style.display = ''
+    btn.style.display = ''
+  }
+
+  const salvar = async () => {
+    const novaQtd = input.value
+    if (!novaQtd || isNaN(novaQtd) || Number(novaQtd) <= 0) { input.focus(); return }
+    btnSalvar.disabled = true
+    btnSalvar.textContent = '...'
+    const resultado = await api.produtos.editarQuantidade(produtoId, novaQtd)
+    if (resultado?.erro) { alert('Erro ao atualizar quantidade.'); btnSalvar.disabled = false; btnSalvar.textContent = '✔'; return }
+    label.textContent = formatarQuantidade(novaQtd)
+    btn.dataset.quantidade = novaQtd
+    cancelar()
+  }
+
+  btnSalvar.addEventListener('click', salvar)
+  btnCancelar.addEventListener('click', cancelar)
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') salvar(); if (e.key === 'Escape') cancelar() })
 }
 
 async function excluirPi(piId, numeroPi) {
