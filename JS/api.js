@@ -74,8 +74,12 @@ export const api = {
     historico: () => requisitar('GET', '/api/estoque/historico'),
     vinculos: () => requisitar('GET', '/api/estoque/vinculos'),
     vincular: (dados) => requisitar('POST', '/api/estoque/vincular', dados),
-    registrarEntrada: (embalagem_kg, rotulo_kg, pallet_caixas, fotoProduto, fotoNota) => {
+    editarVinculo: (id, dados) => requisitar('PATCH', `/api/estoque/vinculos/${id}`, dados),
+    deletarVinculo: (id) => requisitar('DELETE', `/api/estoque/vinculos/${id}`),
+    deletarEntrada: (id) => requisitar('DELETE', `/api/estoque/entradas/${id}`),
+    registrarEntrada: (produto, embalagem_kg, rotulo_kg, pallet_caixas, fotoProduto, fotoNota) => {
       const formData = new FormData()
+      formData.append('produto', produto)
       formData.append('embalagem_kg', embalagem_kg)
       formData.append('rotulo_kg', rotulo_kg)
       formData.append('pallet_caixas', pallet_caixas)

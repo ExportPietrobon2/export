@@ -20,9 +20,13 @@ async function carregarHistorico() {
   container.innerHTML = entradas.map((e) => {
     const data = new Date(e.criado_em).toLocaleString('pt-BR')
     return `
-      <div class="border rounded-3 p-3 mb-2 bg-light">
-        <div class="small text-muted mb-1">${data}</div>
-        <div class="d-flex gap-3 flex-wrap">
+      <div class="border rounded-3 p-3 mb-2 bg-light" id="entrada-${e.id}">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <div class="small text-muted">${data}</div>
+          ${!window._convidado ? `<button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.75rem;border-radius:8px" onclick="deletarEntrada(${e.id})">🗑 Apagar</button>` : ''}
+        </div>
+        ${e.produto ? `<div class="fw-semibold small mb-1">📦 ${e.produto}</div>` : ''}
+        <div class="d-flex gap-2 flex-wrap">
           ${e.embalagem_kg > 0 ? `<span class="badge bg-primary">📦 ${e.embalagem_kg} kg embalagem</span>` : ''}
           ${e.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${e.rotulo_kg} kg rótulo</span>` : ''}
           ${e.pallet_caixas > 0 ? `<span class="badge bg-secondary">🪵 ${e.pallet_caixas} pallet(s) caixa</span>` : ''}
@@ -36,12 +40,24 @@ async function carregarHistorico() {
   }).join('')
 }
 
+window.deletarEntrada = async function(id) {
+  if (!confirm('Apagar esta entrada?')) return
+  const resultado = await api.estoque.deletarEntrada(id)
+  if (resultado?.erro) { alert('Erro ao apagar.'); return }
+  document.getElementById(`entrada-${id}`)?.remove()
+}
+
 function criarFormEntrada() {
   const form = document.createElement('div')
   form.className = 'card border-0 shadow-sm mb-4'
   form.innerHTML = `
     <div class="card-body">
       <h5 class="fw-bold mb-3">📥 Registrar Entrada</h5>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">Produto (opcional)</label>
+        <input type="text" id="inp-produto" class="form-control" placeholder="Ex: Bala Dura Cola 34x250g">
+      </div>
 
       <div class="row g-3 mb-3">
         <div class="col-12 col-md-4">
@@ -64,7 +80,6 @@ function criarFormEntrada() {
       </div>
 
       <div class="d-flex gap-3 mb-3" id="area-remover-fotos"></div>
-
       <div class="d-flex gap-2 flex-wrap mb-3" id="previews-fotos"></div>
 
       <input type="file" id="input-foto-produto" accept="image/*" capture="environment" hidden>
@@ -80,6 +95,7 @@ function iniciarForm() {
   const form = criarFormEntrada()
   containerCards.appendChild(form)
 
+  const inpProduto = document.getElementById('inp-produto')
   const inpEmbalagem = document.getElementById('inp-embalagem')
   const inpRotulo = document.getElementById('inp-rotulo')
   const inpPallet = document.getElementById('inp-pallet')
@@ -120,6 +136,7 @@ function iniciarForm() {
     btn.textContent = 'Enviando...'
 
     const resultado = await api.estoque.registrarEntrada(
+      inpProduto.value.trim(),
       embalagem, rotulo, pallet,
       inputFotoProduto.files[0] || null,
       inputFotoNota.files[0] || null
@@ -132,6 +149,7 @@ function iniciarForm() {
       return
     }
 
+    inpProduto.value = ''
     inpEmbalagem.value = ''
     inpRotulo.value = ''
     inpPallet.value = ''

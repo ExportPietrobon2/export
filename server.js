@@ -421,7 +421,7 @@ app.delete('/api/usuarios/:id', autenticar(['admin']), async (req, res) => {
 // =============================================
 
 app.post('/api/estoque/entrada', autenticar(['admin', 'deposito']), upload.fields([{ name: 'foto_produto', maxCount: 1 }, { name: 'foto_nota', maxCount: 1 }]), async (req, res) => {
-  const { embalagem_kg, rotulo_kg, pallet_caixas } = req.body
+  const { embalagem_kg, rotulo_kg, pallet_caixas, produto } = req.body
   let fotoUrl = null
   let fotoNotaUrl = null
 
@@ -442,8 +442,8 @@ app.post('/api/estoque/entrada', autenticar(['admin', 'deposito']), upload.field
   }
 
   await pool.query(
-    'INSERT INTO estoque_insumos (embalagem_kg, rotulo_kg, pallet_caixas, foto_url, foto_nota_url) VALUES (?, ?, ?, ?, ?)',
-    [parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0, fotoUrl, fotoNotaUrl]
+    'INSERT INTO estoque_insumos (produto, embalagem_kg, rotulo_kg, pallet_caixas, foto_url, foto_nota_url) VALUES (?, ?, ?, ?, ?, ?)',
+    [produto || null, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0, fotoUrl, fotoNotaUrl]
   )
 
   const tipoEntrada = []
@@ -530,6 +530,43 @@ app.post('/api/estoque/vincular', autenticar(['admin', 'almoxarifado']), async (
      </table>`
   )
 
+  res.json({ ok: true })
+})
+
+
+app.delete('/api/estoque/entradas/:id', autenticar(['admin', 'deposito']), async (req, res) => {
+  await pool.query('DELETE FROM estoque_insumos WHERE id = ?', [req.params.id])
+  res.json({ ok: true })
+})
+
+app.patch('/api/estoque/vinculos/:id', autenticar(['admin', 'almoxarifado']), async (req, res) => {
+  const { pi_id, embalagem_kg, rotulo_kg, pallet_caixas } = req.body
+
+  // Calcular saldo excluindo o vínculo atual
+  const [[entradas]] = await pool.query(
+    'SELECT COALESCE(SUM(embalagem_kg),0) as emb, COALESCE(SUM(rotulo_kg),0) as rot, COALESCE(SUM(pallet_caixas),0) as pal FROM estoque_insumos'
+  )
+  const [[outros]] = await pool.query(
+    'SELECT COALESCE(SUM(embalagem_kg),0) as emb, COALESCE(SUM(rotulo_kg),0) as rot, COALESCE(SUM(pallet_caixas),0) as pal FROM vinculos_insumos WHERE id != ?',
+    [req.params.id]
+  )
+  const saldoEmb = parseFloat(entradas.emb) - parseFloat(outros.emb)
+  const saldoRot = parseFloat(entradas.rot) - parseFloat(outros.rot)
+  const saldoPal = parseInt(entradas.pal) - parseInt(outros.pal)
+
+  if ((parseFloat(embalagem_kg) || 0) > saldoEmb) return res.status(400).json({ erro: `Saldo insuficiente de embalagem. Disponível: ${saldoEmb} kg` })
+  if ((parseFloat(rotulo_kg) || 0) > saldoRot) return res.status(400).json({ erro: `Saldo insuficiente de rótulo. Disponível: ${saldoRot} kg` })
+  if ((parseInt(pallet_caixas) || 0) > saldoPal) return res.status(400).json({ erro: `Saldo insuficiente de pallets. Disponível: ${saldoPal}` })
+
+  await pool.query(
+    'UPDATE vinculos_insumos SET pi_id = ?, embalagem_kg = ?, rotulo_kg = ?, pallet_caixas = ? WHERE id = ?',
+    [pi_id, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0, req.params.id]
+  )
+  res.json({ ok: true })
+})
+
+app.delete('/api/estoque/vinculos/:id', autenticar(['admin', 'almoxarifado']), async (req, res) => {
+  await pool.query('DELETE FROM vinculos_insumos WHERE id = ?', [req.params.id])
   res.json({ ok: true })
 })
 
