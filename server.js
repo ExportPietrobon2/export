@@ -19,7 +19,7 @@ cloudinary.config({
 
 const upload = multer({ storage: multer.memoryStorage() })
 
-const EMAIL_TESTE = 'export2@pietrobon.com.br'
+const EMAIL_TESTE = 'pietrobonexport2@gmail.com'
 const MODO_TESTE = true
 
 const resend = new Resend(process.env.RESEND_API_KEY)
