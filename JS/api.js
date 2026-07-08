@@ -87,9 +87,11 @@ export const api = {
     deletarVinculo: (id) => requisitar('DELETE', `/api/estoque/vinculos/${id}`),
     deletarEntrada: (id) => requisitar('DELETE', `/api/estoque/entradas/${id}`),
     editarProdutoEntrada: (id, produto) => requisitar('PATCH', `/api/estoque/entradas/${id}/produto`, { produto }),
-    registrarEntrada: (produto, embalagem_kg, rotulo_kg, pallet_caixas, fotoProduto, fotoNota) => {
+    editarLocalizacaoEntrada: (id, localizacao) => requisitar('PATCH', `/api/estoque/entradas/${id}/localizacao`, { localizacao }),
+    registrarEntrada: (produto, embalagem_kg, rotulo_kg, pallet_caixas, fotoProduto, fotoNota, localizacao) => {
       const formData = new FormData()
       formData.append('produto', produto)
+      formData.append('localizacao', localizacao || '')
       formData.append('embalagem_kg', embalagem_kg)
       formData.append('rotulo_kg', rotulo_kg)
       formData.append('pallet_caixas', pallet_caixas)

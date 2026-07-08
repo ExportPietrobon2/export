@@ -26,6 +26,7 @@ async function carregarHistorico() {
           ${!window._convidado ? `<button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.75rem;border-radius:8px" onclick="deletarEntrada(${e.id})">🗑 Apagar</button>` : ''}
         </div>
         ${e.produto ? `<div class="fw-semibold small mb-1">📦 ${e.produto}</div>` : ''}
+        ${e.localizacao ? `<div class="small mb-1">📍 <span class="fw-semibold">${e.localizacao}</span></div>` : ''}
         <div class="d-flex gap-2 flex-wrap">
           ${e.embalagem_kg > 0 ? `<span class="badge bg-primary">📦 ${e.embalagem_kg} kg embalagem</span>` : ''}
           ${e.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${e.rotulo_kg} kg rótulo</span>` : ''}
@@ -57,6 +58,11 @@ function criarFormEntrada() {
       <div class="mb-3">
         <label class="form-label fw-semibold small">Produto (opcional)</label>
         <input type="text" id="inp-produto" class="form-control" placeholder="Ex: Bala Dura Cola 34x250g">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">📍 Localização dos insumos</label>
+        <input type="text" id="inp-localizacao" class="form-control" placeholder="Ex: Galpão 2, prateleira A3">
       </div>
 
       <div class="row g-3 mb-3">
@@ -96,6 +102,7 @@ function iniciarForm() {
   containerCards.appendChild(form)
 
   const inpProduto = document.getElementById('inp-produto')
+  const inpLocalizacao = document.getElementById('inp-localizacao')
   const inpEmbalagem = document.getElementById('inp-embalagem')
   const inpRotulo = document.getElementById('inp-rotulo')
   const inpPallet = document.getElementById('inp-pallet')
@@ -139,7 +146,8 @@ function iniciarForm() {
       inpProduto.value.trim(),
       embalagem, rotulo, pallet,
       inputFotoProduto.files[0] || null,
-      inputFotoNota.files[0] || null
+      inputFotoNota.files[0] || null,
+      inpLocalizacao.value.trim()
     )
 
     if (resultado?.erro || !resultado?.ok) {
@@ -150,6 +158,7 @@ function iniciarForm() {
     }
 
     inpProduto.value = ''
+    inpLocalizacao.value = ''
     inpEmbalagem.value = ''
     inpRotulo.value = ''
     inpPallet.value = ''

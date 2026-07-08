@@ -22,7 +22,6 @@ async function concluirPi(piId, concluida, btn) {
   carregar()
 }
 
-// ── Seção 1: Almoxarifado (insumos por produto) ──────────────────────────────
 function renderAlmoxarifado(produtos) {
   if (!produtos || produtos.length === 0) {
     return '<p class="text-muted fst-italic small">Nenhum produto cadastrado.</p>'
@@ -77,7 +76,6 @@ function renderAlmoxarifado(produtos) {
   }).join('')
 }
 
-// ── Seção 0: Todas as entradas B2 (visão geral) ─────────────────────────────
 function renderEntradasB2Geral(entradas) {
   if (!entradas || entradas.length === 0) {
     return '<p class="text-muted fst-italic small">Nenhuma entrada registrada pelo B2.</p>'
@@ -90,6 +88,7 @@ function renderEntradasB2Geral(entradas) {
           <span class="${e.produto ? 'fw-semibold small' : 'text-muted small fst-italic'}">${e.produto || 'Produto não informado'}</span>
           <span class="small text-muted">${data}</span>
         </div>
+        ${e.localizacao ? `<div class="small mb-1">📍 <span class="fw-semibold">${e.localizacao}</span></div>` : ''}
         <div class="d-flex gap-2 flex-wrap">
           ${e.embalagem_kg > 0 ? `<span class="badge bg-primary">📦 ${e.embalagem_kg} kg emb.</span>` : ''}
           ${e.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${e.rotulo_kg} kg rót.</span>` : ''}
@@ -104,7 +103,6 @@ function renderEntradasB2Geral(entradas) {
   }).join('')
 }
 
-// ── Seção 2: Estoque geral vinculado ─────────────────────────────────────────
 function renderVinculosEstoque(vinculos) {
   if (!vinculos || vinculos.length === 0) {
     return '<p class="text-muted fst-italic small">Nenhum insumo do estoque geral vinculado a esta PI.</p>'
@@ -123,6 +121,7 @@ function renderVinculosEstoque(vinculos) {
           ${v.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${v.rotulo_kg} kg rót.</span>` : ''}
           ${v.pallet_caixas > 0 ? `<span class="badge bg-secondary">🪵 ${v.pallet_caixas} pallet(s)</span>` : ''}
         </div>
+        ${v.entrada_localizacao ? `<div class="small mb-1">📍 <span class="fw-semibold">${v.entrada_localizacao}</span></div>` : ''}
         <div class="small text-muted">Entrada do B2: ${dataEntrada}</div>
         ${v.entrada_foto || v.entrada_foto_nota ? `
           <div class="d-flex gap-2 mt-2 flex-wrap">
@@ -133,7 +132,6 @@ function renderVinculosEstoque(vinculos) {
   }).join('')
 }
 
-// ── Seção 3: Recebimentos B2 antigos (por PI/produto) ────────────────────────
 function renderRecebimentosB2(recebimentos) {
   if (!recebimentos || recebimentos.length === 0) {
     return '<p class="text-muted small fst-italic">Nenhum recebimento por PI registrado.</p>'
@@ -169,7 +167,6 @@ function renderRecebimentosB2(recebimentos) {
   }).join('<hr class="my-2">')
 }
 
-// ── Renderizar card completo de PI ───────────────────────────────────────────
 function renderCard(pedido) {
   const status = statusDoPi(pedido)
   const liberado = status === 'LIBERADO'
@@ -182,7 +179,6 @@ function renderCard(pedido) {
   const card = document.createElement('div')
   card.className = `card card-pi-admin mb-3${pedido.concluida ? ' pi-concluida' : ''}`
 
-  // Cabeçalho
   const cabecalho = document.createElement('div')
   cabecalho.className = 'card-body d-flex justify-content-between align-items-start flex-wrap gap-2'
   cabecalho.innerHTML = `
@@ -207,13 +203,11 @@ function renderCard(pedido) {
     </div>
   `
 
-  // Detalhe expandível
   const detalhe = document.createElement('div')
   detalhe.id = `detalhe-${pedido.id}`
   detalhe.style.display = 'none'
   detalhe.className = 'border-top px-3 pb-3'
 
-  // Seção: Almoxarifado
   const secAlmox = document.createElement('div')
   secAlmox.className = 'mt-3'
   secAlmox.innerHTML = `
@@ -221,7 +215,6 @@ function renderCard(pedido) {
     ${renderAlmoxarifado(pedido.produtos_pi)}
   `
 
-  // Seção: Estoque geral vinculado
   const secEstoque = document.createElement('div')
   secEstoque.className = 'mt-3'
   secEstoque.innerHTML = `
@@ -229,7 +222,6 @@ function renderCard(pedido) {
     ${renderVinculosEstoque(pedido.vinculos_estoque)}
   `
 
-  // Seção: Recebimentos B2
   const secB2 = document.createElement('div')
   secB2.className = 'mt-3'
   secB2.innerHTML = `
@@ -265,7 +257,6 @@ async function carregar() {
 
   containerPis.innerHTML = ''
 
-  // Seção: Todas as entradas B2
   const entradas = await api.estoque.historico()
   if (entradas && entradas.length) {
     const cardEntradas = document.createElement('div')
@@ -291,7 +282,6 @@ async function carregar() {
     containerPis.appendChild(renderCard(pedido))
   })
 
-  // Listeners expandir
   document.querySelectorAll('.btn-expandir').forEach((btn) => {
     btn.addEventListener('click', () => {
       const detalhe = document.getElementById(`detalhe-${btn.dataset.id}`)
@@ -301,7 +291,6 @@ async function carregar() {
     })
   })
 
-  // Listeners concluir
   document.querySelectorAll('.btn-concluir').forEach((btn) => {
     btn.addEventListener('click', () => concluirPi(btn.dataset.id, btn.dataset.concluida === 'true', btn))
   })

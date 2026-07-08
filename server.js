@@ -138,11 +138,11 @@ app.get('/api/pedidos/completo', autenticar(['admin']), async (req, res) => {
     )
     pedido.recebimentos_b2 = recebimentos
 
-    // Entradas do estoque geral vinculadas a esta PI
     const [vinculosEstoque] = await pool.query(
       `SELECT v.*, e.produto as produto_entrada, e.embalagem_kg as entrada_emb,
               e.rotulo_kg as entrada_rot, e.pallet_caixas as entrada_pal,
               e.foto_url as entrada_foto, e.foto_nota_url as entrada_foto_nota,
+              e.localizacao as entrada_localizacao,
               e.criado_em as entrada_data
        FROM vinculos_insumos v
        JOIN estoque_insumos e ON e.id = v.entrada_id
@@ -430,12 +430,8 @@ app.delete('/api/usuarios/:id', autenticar(['admin']), async (req, res) => {
 })
 
 
-// =============================================
-// ESTOQUE GERAL (entradas B2 sem PI)
-// =============================================
-
 app.post('/api/estoque/entrada', autenticar(['admin', 'deposito']), upload.fields([{ name: 'foto_produto', maxCount: 1 }, { name: 'foto_nota', maxCount: 1 }]), async (req, res) => {
-  const { embalagem_kg, rotulo_kg, pallet_caixas, produto } = req.body
+  const { embalagem_kg, rotulo_kg, pallet_caixas, produto, localizacao } = req.body
   let fotoUrl = null
   let fotoNotaUrl = null
 
@@ -456,8 +452,8 @@ app.post('/api/estoque/entrada', autenticar(['admin', 'deposito']), upload.field
   }
 
   await pool.query(
-    'INSERT INTO estoque_insumos (produto, embalagem_kg, rotulo_kg, pallet_caixas, foto_url, foto_nota_url) VALUES (?, ?, ?, ?, ?, ?)',
-    [produto || null, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0, fotoUrl, fotoNotaUrl]
+    'INSERT INTO estoque_insumos (produto, embalagem_kg, rotulo_kg, pallet_caixas, foto_url, foto_nota_url, localizacao) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [produto || null, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0, fotoUrl, fotoNotaUrl, localizacao || null]
   )
 
   const tipoEntrada = []
@@ -469,6 +465,7 @@ app.post('/api/estoque/entrada', autenticar(['admin', 'deposito']), upload.field
     '📥 Nova entrada no estoque B2',
     `<h2 style="color:#1565C0;margin:0 0 16px">📥 Entrada de Insumos — B2</h2>
      <table style="width:100%;border-collapse:collapse;">
+       ${localizacao ? `<tr><td style="padding:8px 0;color:#8a6a6a;width:160px">Localização</td><td style="padding:8px 0;font-weight:600">${localizacao}</td></tr>` : ''}
        ${parseFloat(embalagem_kg) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a;width:160px">Embalagem</td><td style="padding:8px 0;font-weight:600">${embalagem_kg} kg</td></tr>` : ''}
        ${parseFloat(rotulo_kg) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a">Rótulo</td><td style="padding:8px 0;font-weight:600">${rotulo_kg} kg</td></tr>` : ''}
        ${parseInt(pallet_caixas) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a">Pallets de caixa</td><td style="padding:8px 0;font-weight:600">${pallet_caixas} pallet(s)</td></tr>` : ''}
@@ -510,7 +507,6 @@ app.get('/api/estoque/vinculos', autenticar(['admin', 'almoxarifado', 'convidado
 app.post('/api/estoque/vincular', autenticar(['admin', 'almoxarifado']), async (req, res) => {
   const { entrada_id, pi_id, produto, embalagem_kg, rotulo_kg, pallet_caixas } = req.body
 
-  // Verificar saldo disponível da entrada específica
   const [[entrada]] = await pool.query(
     'SELECT embalagem_kg, rotulo_kg, pallet_caixas FROM estoque_insumos WHERE id = ?', [entrada_id]
   )
@@ -562,10 +558,15 @@ app.patch('/api/estoque/entradas/:id/produto', autenticar(['admin', 'almoxarifad
   res.json({ ok: true })
 })
 
+app.patch('/api/estoque/entradas/:id/localizacao', autenticar(['admin', 'almoxarifado', 'deposito']), async (req, res) => {
+  const { localizacao } = req.body
+  await pool.query('UPDATE estoque_insumos SET localizacao = ? WHERE id = ?', [localizacao || null, req.params.id])
+  res.json({ ok: true })
+})
+
 app.patch('/api/estoque/vinculos/:id', autenticar(['admin', 'almoxarifado']), async (req, res) => {
   const { pi_id, embalagem_kg, rotulo_kg, pallet_caixas } = req.body
 
-  // Calcular saldo excluindo o vínculo atual
   const [[entradas]] = await pool.query(
     'SELECT COALESCE(SUM(embalagem_kg),0) as emb, COALESCE(SUM(rotulo_kg),0) as rot, COALESCE(SUM(pallet_caixas),0) as pal FROM estoque_insumos'
   )

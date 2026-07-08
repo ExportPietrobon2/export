@@ -242,7 +242,6 @@ async function carregarRecebimentos() {
   const container = document.getElementById('conteudo-recebimentos')
   container.innerHTML = '<p class="text-muted">Carregando...</p>'
 
-  // Mostrar entradas do estoque geral (B2) com produto + botão editar nome
   const entradas = await api.estoque.historico()
   if (entradas && entradas.length) {
     const secao = document.createElement('div')
@@ -263,6 +262,17 @@ async function carregarRecebimentos() {
                 <input type="text" id="rec-produto-input-${e.id}" class="form-control form-control-sm" value="${e.produto || ''}" placeholder="Nome do produto">
                 <button class="btn btn-sm btn-pietrobon px-3" onclick="salvarProdutoEntrada(${e.id})">✔</button>
                 <button class="btn btn-sm btn-outline-secondary px-3" onclick="cancelarProdutoEntrada(${e.id})">✕</button>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-1 flex-wrap">
+              <div id="rec-local-label-${e.id}" class="${e.localizacao ? 'small' : 'text-muted small fst-italic'}">📍 ${e.localizacao || 'Localização não informada'}</div>
+              ${!window._convidado ? `<button class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.75rem;border-radius:8px" onclick="editarLocalizacaoEntrada(${e.id})">📍 ${e.localizacao ? 'Editar local' : 'Adicionar local'}</button>` : ''}
+            </div>
+            <div id="rec-local-form-${e.id}" style="display:none" class="mb-2">
+              <div class="d-flex gap-2">
+                <input type="text" id="rec-local-input-${e.id}" class="form-control form-control-sm" value="${e.localizacao || ''}" placeholder="Ex: Galpão 2, prateleira A3">
+                <button class="btn btn-sm btn-pietrobon px-3" onclick="salvarLocalizacaoEntrada(${e.id})">✔</button>
+                <button class="btn btn-sm btn-outline-secondary px-3" onclick="cancelarLocalizacaoEntrada(${e.id})">✕</button>
               </div>
             </div>
             <div class="d-flex gap-2 flex-wrap">
@@ -313,9 +323,45 @@ async function carregarRecebimentos() {
       label.className = valor ? 'fw-semibold small mb-1' : 'text-muted small fst-italic mb-1'
       cancelarProdutoEntrada(id)
 
-      // Atualizar botão também
       const btnEditar = document.querySelector(`#rec-entrada-${id} .btn-outline-primary`)
       if (btnEditar) btnEditar.textContent = valor ? '✏️ Editar produto' : '✏️ Adicionar produto'
+    }
+
+    window.editarLocalizacaoEntrada = function(id) {
+      document.getElementById(`rec-local-label-${id}`).parentElement.style.display = 'none'
+      document.getElementById(`rec-local-form-${id}`).style.display = 'block'
+      const input = document.getElementById(`rec-local-input-${id}`)
+      input.focus()
+      input.select()
+    }
+
+    window.cancelarLocalizacaoEntrada = function(id) {
+      document.getElementById(`rec-local-label-${id}`).parentElement.style.display = ''
+      document.getElementById(`rec-local-form-${id}`).style.display = 'none'
+    }
+
+    window.salvarLocalizacaoEntrada = async function(id) {
+      const input = document.getElementById(`rec-local-input-${id}`)
+      const valor = input.value.trim()
+      const btn = input.nextElementSibling
+      btn.disabled = true
+      btn.textContent = '...'
+
+      const resultado = await api.estoque.editarLocalizacaoEntrada(id, valor)
+      if (resultado?.erro) {
+        alert('Erro ao salvar.')
+        btn.disabled = false
+        btn.textContent = '✔'
+        return
+      }
+
+      const label = document.getElementById(`rec-local-label-${id}`)
+      label.textContent = `📍 ${valor || 'Localização não informada'}`
+      label.className = valor ? 'small' : 'text-muted small fst-italic'
+      cancelarLocalizacaoEntrada(id)
+
+      const btnEditar = document.querySelector(`#rec-local-form-${id}`).previousElementSibling.querySelector('.btn-outline-primary')
+      if (btnEditar) btnEditar.textContent = valor ? '📍 Editar local' : '📍 Adicionar local'
     }
   }
 }
@@ -346,9 +392,6 @@ async function iniciar() {
 }
 
 iniciar()
-// =============================================
-// ESTOQUE GERAL — entradas B2 com saldo por entrada
-// =============================================
 
 async function carregarEstoqueGeral() {
   const container = document.getElementById('conteudo-estoque-geral')
@@ -368,7 +411,6 @@ async function carregarEstoqueGeral() {
     return
   }
 
-  // Calcular quanto de cada entrada já foi vinculado
   entradas.forEach((e) => {
     const vincsEntrada = (vinculos || []).filter((v) => v.entrada_id === e.id)
     e.vinculado_emb = vincsEntrada.reduce((s, v) => s + parseFloat(v.embalagem_kg || 0), 0)
@@ -391,7 +433,6 @@ async function carregarEstoqueGeral() {
     card.className = `card border-2 ${statusCor} mb-3`
     card.id = `entrada-card-${e.id}`
 
-    // Vínculos já feitos para essa entrada
     const vincsHtml = e._vinculos.length ? `
       <div class="mt-2 pt-2 border-top">
         <div class="small fw-semibold text-muted mb-1">Vínculos:</div>
@@ -431,6 +472,7 @@ async function carregarEstoqueGeral() {
         <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-1">
           <div>
             ${e.produto ? `<div class="fw-bold mb-1">📦 ${e.produto}</div>` : ''}
+            ${e.localizacao ? `<div class="small mb-1">📍 <span class="fw-semibold">${e.localizacao}</span></div>` : ''}
             <div class="small text-muted">${data}</div>
           </div>
           <span class="badge ${totDisp === 0 ? 'bg-success' : totalVinculado > 0 ? 'bg-warning text-dark' : 'bg-secondary'}">
@@ -491,7 +533,6 @@ async function carregarEstoqueGeral() {
     container.appendChild(card)
   })
 
-  // Listeners globais
   window.toggleFormVincular = function(entradaId) {
     const form = document.getElementById(`form-vincular-${entradaId}`)
     if (!form) return
