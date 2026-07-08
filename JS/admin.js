@@ -187,7 +187,7 @@ function renderCard(pedido) {
       <div class="text-muted small">
         ${pedido.cliente || ''}
         ${pedido.destino ? '· ' + pedido.destino : ''}
-        ${pedido.data_embarque ? '· 🗓 ' + new Date(pedido.data_embarque).toLocaleDateString('pt-BR') : ''}
+        ${pedido.data_embarque ? '· 🗓 ' + new Date(String(pedido.data_embarque).slice(0, 10) + 'T00:00:00').toLocaleDateString('pt-BR') : ''}
       </div>
       <div class="mt-1 d-flex align-items-center gap-2 flex-wrap">
         <span class="badge ${liberado ? 'bg-success' : bloqueado ? 'bg-danger' : 'bg-secondary'}">${status}</span>
