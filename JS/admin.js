@@ -327,10 +327,10 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('focus', carregar)
 
 async function iniciar() {
-  const perfil = exigirPapel(['admin', 'convidado'])
+  const perfil = exigirPapel(['admin', 'convidado', 'compras'])
   if (!perfil) return
   montarCabecalho(perfil.papel)
-  window._convidado = perfil.papel === 'convidado'
+  window._convidado = perfil.papel === 'convidado' || perfil.papel === 'compras'
   carregar()
 }
 

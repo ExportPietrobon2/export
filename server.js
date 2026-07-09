@@ -112,7 +112,7 @@ app.get('/api/pedidos', autenticar(TODOS), async (req, res) => {
   res.json(pedidos)
 })
 
-app.get('/api/pedidos/completo', autenticar(['admin', 'gerente_producao']), async (req, res) => {
+app.get('/api/pedidos/completo', autenticar(['admin', 'gerente_producao', 'compras']), async (req, res) => {
   const incluirConcluidas = req.query.incluirConcluidas === 'true'
   const condicao = incluirConcluidas ? '' : 'WHERE p.concluida = 0'
   const [pedidos] = await pool.query(`SELECT * FROM pedidos p ${condicao} ORDER BY p.numero_pi DESC`)
@@ -498,7 +498,7 @@ app.post('/api/estoque/entrada', autenticar(['admin', 'deposito']), upload.field
   res.json({ ok: true })
 })
 
-app.get('/api/estoque/historico', autenticar(['admin', 'almoxarifado', 'deposito', 'convidado']), async (req, res) => {
+app.get('/api/estoque/historico', autenticar(['admin', 'almoxarifado', 'deposito', 'convidado', 'compras']), async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM estoque_insumos ORDER BY criado_em DESC LIMIT 50')
   res.json(rows)
 })
