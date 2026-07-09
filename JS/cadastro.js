@@ -165,8 +165,7 @@ document.getElementById('form-novo-produto').addEventListener('submit', async (e
   const resultado = await api.produtos.criar({
     pi_id: piId,
     produto,
-    quantidade,
-    observacoes: document.getElementById('observacoes-produto').value.trim() || null
+    quantidade
   })
 
   if (resultado?.erro) { alert('Erro ao cadastrar produto.'); return }
