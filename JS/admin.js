@@ -2,7 +2,7 @@ import { api } from './api.js'
 import { calcularStatusProduto, formatarQuantidade } from './constants.js'
 import { exigirPapel } from './auth.js'
 import { montarCabecalho } from './cabecalho.js'
-import { piEmAlerta, bannerAlertaHtml, resumoAlertasHtml, piNaoDeclarada, bannerDeclaracaoHtml, resumoDeclaracaoHtml, seloPrazoDeclaracaoPiHtml } from './alertas.js'
+import { piEmAlerta, bannerAlertaHtml, resumoAlertasHtml, piNaoDeclarada, bannerDeclaracaoHtml, resumoDeclaracaoHtml, seloPrazoDeclaracaoPiHtml, seloPrazoDeclaracaoHtml } from './alertas.js'
 
 const containerPis = document.getElementById('container-pis')
 const toggleConcluidas = document.getElementById('toggle-concluidas')
@@ -65,6 +65,7 @@ function renderAlmoxarifado(produtos) {
           <strong>${produto.produto}</strong>
           <span class="badge bg-secondary">${formatarQuantidade(produto.quantidade)}</span>
           <span class="badge ${liberado ? 'bg-success' : 'bg-danger'}">${status}</span>
+          ${seloPrazoDeclaracaoHtml(produto)}
         </div>
         ${insumos.length > 0
           ? `<table class="table table-sm table-bordered mb-0 tabela-insumos-admin">
