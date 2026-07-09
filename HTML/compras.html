@@ -26,6 +26,7 @@
     <ul class="nav nav-tabs mb-4" id="abas-compras">
       <li class="nav-item"><button class="nav-link active" data-aba-compra="registro">📝 Compras</button></li>
       <li class="nav-item"><button class="nav-link" data-aba-compra="sugestoes">💡 O que comprar</button></li>
+      <li class="nav-item"><button class="nav-link" data-aba-compra="entradas">📦 Entradas B2</button></li>
     </ul>
 
     <div id="aba-registro">
@@ -37,16 +38,6 @@
               <div class="col-12 col-md-6">
                 <label class="form-label fw-semibold small">O que está comprando *</label>
                 <input type="text" id="c-descricao" class="form-control" placeholder="Ex: Rótulo Bala Dura 65mm" required>
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label fw-semibold small">Tipo</label>
-                <select id="c-tipo" class="form-select">
-                  <option value="embalagem">Embalagem</option>
-                  <option value="rotulo">Rótulo</option>
-                  <option value="caixa">Caixa</option>
-                  <option value="etiqueta">Etiqueta</option>
-                  <option value="outro" selected>Outro</option>
-                </select>
               </div>
               <div class="col-6 col-md-3">
                 <label class="form-label fw-semibold small">Fornecedor</label>
@@ -68,18 +59,6 @@
                 <label class="form-label fw-semibold small">Chegada prevista</label>
                 <input type="date" id="c-data-prevista" class="form-control">
               </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label fw-semibold small">Custo (R$)</label>
-                <input type="number" id="c-custo" class="form-control" placeholder="Opcional" min="0" step="any">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label fw-semibold small">Vincular à PI</label>
-                <select id="c-pi" class="form-select"><option value="">Estoque geral</option></select>
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label fw-semibold small">Observações</label>
-                <input type="text" id="c-obs" class="form-control" placeholder="Opcional">
-              </div>
             </div>
             <button type="submit" class="btn btn-ok-grande w-100 mt-3" id="btn-salvar-compra">✔ Registrar Compra</button>
           </form>
@@ -98,6 +77,10 @@
 
     <div id="aba-sugestoes" style="display:none">
       <div id="conteudo-sugestoes"><p class="text-muted">Carregando...</p></div>
+    </div>
+
+    <div id="aba-entradas" style="display:none">
+      <div id="conteudo-entradas"><p class="text-muted">Carregando...</p></div>
     </div>
 
   </div>

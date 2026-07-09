@@ -17,13 +17,6 @@ function diasAtraso(compra) {
   return d > 0 ? d : null
 }
 
-function riscoEmbarque(compra) {
-  if (compra.status === 'recebido' || !compra.data_prevista || !compra.data_embarque) return false
-  const prev = new Date(dataInput(compra.data_prevista) + 'T00:00:00')
-  const emb = new Date(dataInput(compra.data_embarque) + 'T00:00:00')
-  return prev > emb
-}
-
 // ---- Lista de compras ----
 async function carregarCompras() {
   const container = document.getElementById('lista-compras')
@@ -40,8 +33,7 @@ async function carregarCompras() {
 
   container.innerHTML = lista.map((c) => {
     const atraso = diasAtraso(c)
-    const risco = riscoEmbarque(c)
-    const alerta = atraso ? ` card-alerta-embarque` : ''
+    const alerta = atraso ? ' card-alerta-embarque' : ''
     const opcoesStatus = Object.keys(statusLabel).map((s) => `<option value="${s}" ${c.status === s ? 'selected' : ''}>${statusLabel[s]}</option>`).join('')
     return `
       <div class="card border-0 shadow-sm mb-2${alerta}" id="compra-${c.id}">
@@ -51,20 +43,15 @@ async function carregarCompras() {
             <div>
               <div class="fw-bold">${c.descricao}</div>
               <div class="small text-muted">
-                <span class="badge bg-light text-dark border">${tipoLabel[c.tipo] || 'Outro'}</span>
-                ${c.quantidade > 0 ? ` ${c.quantidade} ${c.unidade || ''}` : ''}
+                ${c.quantidade > 0 ? `${c.quantidade} ${c.unidade || ''}` : ''}
                 ${c.fornecedor ? ` · 🏭 ${c.fornecedor}` : ''}
-                ${c.numero_pi ? ` · 🔗 PI ${c.numero_pi}` : ' · 🏪 Estoque geral'}
               </div>
             </div>
             <span class="badge ${statusCor[c.status] || 'bg-secondary'}">${statusLabel[c.status] || c.status}</span>
           </div>
           <div class="small text-muted mb-2">
             🛒 Compra: ${dataBR(c.data_compra)} · 🚚 Chegada prevista: <span class="${atraso ? 'text-danger fw-bold' : 'fw-semibold'}">${dataBR(c.data_prevista)}</span>
-            ${c.custo ? ` · 💰 R$ ${Number(c.custo).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}
           </div>
-          ${risco ? `<div class="mb-2"><span class="selo-prazo-vencido">⚠ Chega DEPOIS do embarque da PI ${c.numero_pi}</span></div>` : ''}
-          ${c.observacoes ? `<div class="small text-muted mb-2">📝 ${c.observacoes}</div>` : ''}
           <div class="d-flex gap-2 flex-wrap align-items-center">
             <select class="form-select form-select-sm" style="max-width:160px" onchange="mudarStatusCompra(${c.id}, this.value)">${opcoesStatus}</select>
             ${c.status !== 'recebido' ? `<button class="btn btn-sm btn-pietrobon" onclick="receberCompra(${c.id})">✅ Recebida</button>` : ''}
@@ -127,16 +114,41 @@ async function carregarSugestoes() {
       </div>`).join('')}`
 }
 
-async function carregarPis() {
-  const select = document.getElementById('c-pi')
-  const pedidos = await api.pedidos.listar()
-  if (!Array.isArray(pedidos)) return
-  pedidos.forEach((p) => {
-    const o = document.createElement('option')
-    o.value = p.id
-    o.textContent = `PI ${p.numero_pi}${p.cliente ? ' — ' + p.cliente : ''}`
-    select.appendChild(o)
-  })
+// ---- Entradas do B2 ----
+async function carregarEntradasB2() {
+  const container = document.getElementById('conteudo-entradas')
+  const entradas = await api.estoque.historico()
+  if (!Array.isArray(entradas)) { container.innerHTML = '<p class="text-danger">Erro ao carregar.</p>'; return }
+  if (!entradas.length) {
+    container.innerHTML = '<p class="text-muted fst-italic">Nenhuma entrada registrada pelo B2.</p>'
+    return
+  }
+
+  container.innerHTML = `
+    <div class="alert alert-info fw-semibold">📦 Entradas registradas pelo depósito B2.</div>
+    ${entradas.map((e) => {
+      const data = new Date(e.criado_em).toLocaleString('pt-BR')
+      return `
+        <div class="card border-0 shadow-sm mb-2">
+          <div class="card-body">
+            <div class="d-flex justify-content-between flex-wrap gap-1 mb-1">
+              <span class="${e.produto ? 'fw-semibold' : 'text-muted fst-italic'}">${e.produto || 'Produto não informado'}</span>
+              <span class="small text-muted">${data}</span>
+            </div>
+            ${e.localizacao ? `<div class="small mb-1">📍 <span class="fw-semibold">${e.localizacao}</span></div>` : ''}
+            <div class="d-flex gap-2 flex-wrap">
+              ${e.embalagem_kg > 0 ? `<span class="badge bg-primary">📦 ${e.embalagem_kg} kg emb.</span>` : ''}
+              ${e.rotulo_kg > 0 ? `<span class="badge bg-info text-dark">🏷 ${e.rotulo_kg} kg rót.</span>` : ''}
+              ${e.pallet_caixas > 0 ? `<span class="badge bg-secondary">🪵 ${e.pallet_caixas} pallet(s)</span>` : ''}
+            </div>
+            ${e.foto_url || e.foto_nota_url ? `
+              <div class="d-flex gap-2 mt-2 flex-wrap">
+                ${e.foto_url ? `<a href="${e.foto_url}" target="_blank"><img src="${e.foto_url}" class="foto-detalhe-img rounded-2" alt="Foto produto"></a>` : ''}
+                ${e.foto_nota_url ? `<a href="${e.foto_nota_url}" target="_blank"><img src="${e.foto_nota_url}" class="foto-detalhe-img rounded-2" alt="Foto nota"></a>` : ''}
+              </div>` : ''}
+          </div>
+        </div>`
+    }).join('')}`
 }
 
 document.getElementById('form-compra').addEventListener('submit', async (e) => {
@@ -149,15 +161,11 @@ document.getElementById('form-compra').addEventListener('submit', async (e) => {
 
   const dados = {
     descricao,
-    tipo: document.getElementById('c-tipo').value,
     quantidade: document.getElementById('c-quantidade').value || 0,
     unidade: document.getElementById('c-unidade').value.trim() || null,
     fornecedor: document.getElementById('c-fornecedor').value.trim() || null,
     data_compra: document.getElementById('c-data-compra').value || null,
     data_prevista: document.getElementById('c-data-prevista').value || null,
-    custo: document.getElementById('c-custo').value || null,
-    pi_id: document.getElementById('c-pi').value || null,
-    observacoes: document.getElementById('c-obs').value.trim() || null,
     status: 'comprado'
   }
 
@@ -167,7 +175,6 @@ document.getElementById('form-compra').addEventListener('submit', async (e) => {
   if (r?.erro) { alert(r.erro || 'Erro ao registrar compra.'); return }
 
   e.target.reset()
-  document.getElementById('c-tipo').value = 'outro'
   carregarCompras()
 })
 
@@ -180,7 +187,9 @@ document.querySelectorAll('[data-aba-compra]').forEach((btn) => {
     const aba = btn.dataset.abaCompra
     document.getElementById('aba-registro').style.display = aba === 'registro' ? 'block' : 'none'
     document.getElementById('aba-sugestoes').style.display = aba === 'sugestoes' ? 'block' : 'none'
+    document.getElementById('aba-entradas').style.display = aba === 'entradas' ? 'block' : 'none'
     if (aba === 'sugestoes') carregarSugestoes()
+    if (aba === 'entradas') carregarEntradasB2()
   })
 })
 
@@ -188,7 +197,6 @@ async function iniciar() {
   const perfil = exigirPapel(['admin', 'compras'])
   if (!perfil) return
   montarCabecalho(perfil.papel)
-  carregarPis()
   carregarCompras()
 }
 
