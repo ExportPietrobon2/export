@@ -334,10 +334,10 @@ document.addEventListener('visibilitychange', () => {
 })
 
 async function iniciar() {
-  const perfil = exigirPapel(['admin', 'convidado', 'compras'])
+  const perfil = exigirPapel('todos')
   if (!perfil) return
   montarCabecalho(perfil.papel)
-  window._convidado = perfil.papel === 'convidado' || perfil.papel === 'compras'
+  window._convidado = perfil.papel !== 'admin'
   carregar()
 }
 

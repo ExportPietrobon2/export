@@ -11,7 +11,7 @@ export function montarCabecalho(papel) {
     { href: '/HTML/admin.html', texto: 'Visão Geral das PIs', papeis: ['admin', 'convidado', 'compras'] },
     { href: '/HTML/embarques.html', texto: 'Embarques', papeis: ['admin', 'gerente_producao'] },
     { href: '/HTML/compras.html', texto: 'Compras', papeis: ['admin', 'compras'] }
-  ].filter((l) => l.papeis.includes(papel))
+  ]
 
   const brandHref = links.some((l) => l.href === '/HTML/admin.html')
     ? '/HTML/admin.html'

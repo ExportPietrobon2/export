@@ -5,6 +5,7 @@ import { montarCabecalho } from './cabecalho.js'
 const tipoLabel = { embalagem: 'Embalagem', rotulo: 'Rótulo', caixa: 'Caixa', etiqueta: 'Etiqueta', outro: 'Outro' }
 const statusLabel = { pendente: 'Pendente', comprado: 'Comprado', em_transito: 'Em trânsito', recebido: 'Recebido' }
 const statusCor = { pendente: 'bg-secondary', comprado: 'bg-primary', em_transito: 'bg-warning text-dark', recebido: 'bg-success' }
+let podeComprar = false
 
 function dataInput(v) { return v ? String(v).slice(0, 10) : '' }
 function dataBR(v) { return v ? new Date(dataInput(v) + 'T00:00:00').toLocaleDateString('pt-BR') : '—' }
@@ -52,11 +53,11 @@ async function carregarCompras() {
           <div class="small text-muted mb-2">
             🛒 Compra: ${dataBR(c.data_compra)} · 🚚 Chegada prevista: <span class="${atraso ? 'text-danger fw-bold' : 'fw-semibold'}">${dataBR(c.data_prevista)}</span>
           </div>
-          <div class="d-flex gap-2 flex-wrap align-items-center">
+          ${podeComprar ? `<div class="d-flex gap-2 flex-wrap align-items-center">
             <select class="form-select form-select-sm" style="max-width:160px" onchange="mudarStatusCompra(${c.id}, this.value)">${opcoesStatus}</select>
             ${c.status !== 'recebido' ? `<button class="btn btn-sm btn-pietrobon" onclick="receberCompra(${c.id})">✅ Recebida</button>` : ''}
             <button class="btn btn-sm btn-outline-danger" onclick="excluirCompra(${c.id})">🗑 Excluir</button>
-          </div>
+          </div>` : ''}
         </div>
       </div>`
   }).join('')
@@ -194,9 +195,14 @@ document.querySelectorAll('[data-aba-compra]').forEach((btn) => {
 })
 
 async function iniciar() {
-  const perfil = exigirPapel(['admin', 'compras'])
+  const perfil = exigirPapel('todos')
   if (!perfil) return
+  podeComprar = ['admin', 'compras'].includes(perfil.papel)
   montarCabecalho(perfil.papel)
+  if (!podeComprar) {
+    const formCard = document.getElementById('form-compra').closest('.card')
+    if (formCard) formCard.style.display = 'none'
+  }
   carregarCompras()
 }
 

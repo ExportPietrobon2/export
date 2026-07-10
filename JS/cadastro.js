@@ -176,10 +176,10 @@ document.getElementById('form-novo-produto').addEventListener('submit', async (e
 })
 
 async function iniciar() {
-  const perfil = exigirPapel(['admin', 'convidado'])
+  const perfil = exigirPapel('todos')
   if (!perfil) return
   montarCabecalho(perfil.papel)
-  window._convidado = perfil.papel === 'convidado'
+  window._convidado = perfil.papel !== 'admin'
   if (window._convidado) {
     document.querySelectorAll('.card').forEach((c, i) => { if (i < 2) c.style.display = 'none' })
   }

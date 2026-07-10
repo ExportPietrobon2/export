@@ -8,6 +8,7 @@ const containerPis = document.getElementById('container-pis')
 const toggleConcluidas = document.getElementById('toggle-concluidas')
 const toggleSoProntas = document.getElementById('toggle-so-prontas')
 const abertos = new Set()
+let podeEditarEmbarque = false
 
 const rotuloInsumo = { embalagem: 'Embalagem', rotulo: 'Rótulo', caixa: 'Caixa', etiqueta: 'Etiqueta' }
 
@@ -172,7 +173,7 @@ function renderCard(pedido) {
 
   const secEmbarque = document.createElement('div')
   secEmbarque.className = 'mt-3'
-  secEmbarque.innerHTML = `
+  secEmbarque.innerHTML = podeEditarEmbarque ? `
     <div class="secao-titulo-card mb-2">🚢 Data de Embarque</div>
     <div class="d-flex align-items-end gap-2 flex-wrap">
       <div>
@@ -182,6 +183,9 @@ function renderCard(pedido) {
       <button class="btn btn-sm btn-pietrobon" id="embarque-btn-${pedido.id}">💾 Salvar data</button>
       <span class="small ms-1" id="embarque-msg-${pedido.id}"></span>
     </div>
+  ` : `
+    <div class="secao-titulo-card mb-2">🚢 Data de Embarque</div>
+    <div class="fw-semibold">${pedido.data_embarque ? new Date(dataParaInput(pedido.data_embarque) + 'T00:00:00').toLocaleDateString('pt-BR') : '— não definida'}</div>
   `
 
   const secAlmox = document.createElement('div')
@@ -310,8 +314,9 @@ document.addEventListener('visibilitychange', () => {
 })
 
 async function iniciar() {
-  const perfil = exigirPapel(['admin', 'gerente_producao'])
+  const perfil = exigirPapel('todos')
   if (!perfil) return
+  podeEditarEmbarque = ['admin', 'gerente_producao'].includes(perfil.papel)
   montarCabecalho(perfil.papel)
   carregar()
 }

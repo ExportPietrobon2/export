@@ -87,7 +87,7 @@ function autenticar(papeis) {
   }
 }
 
-const TODOS = ['admin', 'almoxarifado', 'deposito', 'convidado']
+const TODOS = ['admin', 'almoxarifado', 'deposito', 'convidado', 'gerente_producao', 'compras']
 
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body
@@ -112,7 +112,7 @@ app.get('/api/pedidos', autenticar(TODOS), async (req, res) => {
   res.json(pedidos)
 })
 
-app.get('/api/pedidos/completo', autenticar(['admin', 'gerente_producao', 'compras']), async (req, res) => {
+app.get('/api/pedidos/completo', autenticar(TODOS), async (req, res) => {
   const incluirConcluidas = req.query.incluirConcluidas === 'true'
   const condicao = incluirConcluidas ? '' : 'WHERE p.concluida = 0'
   const [pedidos] = await pool.query(`SELECT * FROM pedidos p ${condicao} ORDER BY p.numero_pi DESC`)
@@ -498,12 +498,12 @@ app.post('/api/estoque/entrada', autenticar(['admin', 'deposito']), upload.field
   res.json({ ok: true })
 })
 
-app.get('/api/estoque/historico', autenticar(['admin', 'almoxarifado', 'deposito', 'convidado', 'compras']), async (req, res) => {
+app.get('/api/estoque/historico', autenticar(TODOS), async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM estoque_insumos ORDER BY criado_em DESC LIMIT 50')
   res.json(rows)
 })
 
-app.get('/api/estoque/saldo', autenticar(['admin', 'almoxarifado', 'convidado']), async (req, res) => {
+app.get('/api/estoque/saldo', autenticar(TODOS), async (req, res) => {
   const [[entradas]] = await pool.query(
     'SELECT COALESCE(SUM(embalagem_kg),0) as emb, COALESCE(SUM(rotulo_kg),0) as rot, COALESCE(SUM(pallet_caixas),0) as pal FROM estoque_insumos'
   )
@@ -517,7 +517,7 @@ app.get('/api/estoque/saldo', autenticar(['admin', 'almoxarifado', 'convidado'])
   })
 })
 
-app.get('/api/estoque/vinculos', autenticar(['admin', 'almoxarifado', 'convidado']), async (req, res) => {
+app.get('/api/estoque/vinculos', autenticar(TODOS), async (req, res) => {
   const [rows] = await pool.query(`
     SELECT v.*, p.numero_pi, p.cliente
     FROM vinculos_insumos v
@@ -727,7 +727,7 @@ async function verificarAlertasDeclaracao() {
 setTimeout(verificarAlertasDeclaracao, 90 * 1000)
 setInterval(verificarAlertasDeclaracao, 24 * 60 * 60 * 1000)
 
-app.get('/api/alertas/declaracao', autenticar(['admin', 'almoxarifado', 'gerente_producao']), async (req, res) => {
+app.get('/api/alertas/declaracao', autenticar(TODOS), async (req, res) => {
   const [rows] = await pool.query(SQL_DECLARACAO_PENDENTE)
   res.json(rows)
 })
@@ -738,7 +738,7 @@ app.get('/api/alertas/declaracao', autenticar(['admin', 'almoxarifado', 'gerente
 
 const tipoLabelCompra = { embalagem: 'Embalagem', rotulo: 'Rótulo', caixa: 'Caixa', etiqueta: 'Etiqueta', outro: 'Outro' }
 
-app.get('/api/compras', autenticar(['admin', 'compras', 'almoxarifado']), async (req, res) => {
+app.get('/api/compras', autenticar(TODOS), async (req, res) => {
   const [rows] = await pool.query(`
     SELECT c.*, p.numero_pi, p.cliente, p.data_embarque
     FROM compras c
@@ -818,7 +818,7 @@ app.delete('/api/compras/:id', autenticar(['admin', 'compras']), async (req, res
   res.json({ ok: true })
 })
 
-app.get('/api/compras/sugestoes', autenticar(['admin', 'compras']), async (req, res) => {
+app.get('/api/compras/sugestoes', autenticar(TODOS), async (req, res) => {
   const [rows] = await pool.query(`
     SELECT p.id as pi_id, p.numero_pi, p.cliente, p.data_embarque,
            pp.id as produto_id, pp.produto, pp.quantidade,

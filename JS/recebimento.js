@@ -217,10 +217,10 @@ function atualizarPreview(tipo, file, previews, areaRemover, btnFoto, input) {
 }
 
 async function iniciar() {
-  const perfil = exigirPapel(['admin', 'deposito', 'convidado'])
+  const perfil = exigirPapel('todos')
   if (!perfil) return
   montarCabecalho(perfil.papel)
-  window._convidado = perfil.papel === 'convidado'
+  window._convidado = !['admin', 'deposito'].includes(perfil.papel)
 
   mensagemVazio.innerHTML = ''
 

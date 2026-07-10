@@ -415,10 +415,10 @@ async function carregarAlertaDeclaracao() {
 }
 
 async function iniciar() {
-  const perfil = exigirPapel(['admin', 'almoxarifado', 'convidado'])
+  const perfil = exigirPapel('todos')
   if (!perfil) return
   montarCabecalho(perfil.papel)
-  window._convidado = perfil.papel === 'convidado'
+  window._convidado = !['admin', 'almoxarifado'].includes(perfil.papel)
   carregarPedidos()
   carregarAlertaDeclaracao()
   setInterval(carregarAlertaDeclaracao, 5 * 60 * 1000)
