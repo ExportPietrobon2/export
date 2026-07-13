@@ -875,6 +875,73 @@ async function verificarComprasAtrasadas() {
 setTimeout(verificarComprasAtrasadas, 120 * 1000)
 setInterval(verificarComprasAtrasadas, 24 * 60 * 60 * 1000)
 
+// =============================================
+// DEMANDAS DE COMPRA
+// =============================================
+
+app.get('/api/demandas', autenticar(TODOS), async (req, res) => {
+  const [rows] = await pool.query(`
+    SELECT d.*, p.numero_pi, p.cliente
+    FROM demandas d
+    LEFT JOIN pedidos p ON p.id = d.pi_id
+    ORDER BY (d.status <> 'pendente'), d.criado_em DESC LIMIT 300`)
+  res.json(rows)
+})
+
+app.post('/api/demandas', autenticar(['admin', 'almoxarifado']), async (req, res) => {
+  const { descricao, quantidade, unidade, pi_id, observacoes } = req.body
+  if (!descricao) return res.status(400).json({ erro: 'Informe o que está faltando.' })
+
+  const [r] = await pool.query(
+    `INSERT INTO demandas (descricao, quantidade, unidade, pi_id, observacoes, solicitante)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [descricao, parseFloat(quantidade) || 0, unidade || null, pi_id || null, observacoes || null, req.usuario && req.usuario.nome ? req.usuario.nome : null]
+  )
+
+  const [[pi]] = pi_id ? await pool.query('SELECT numero_pi FROM pedidos WHERE id = ?', [pi_id]) : [[null]]
+  enviarEmail(
+    `📌 Nova demanda de compra — ${descricao}`,
+    `<h2 style="color:#6A1B9A;margin:0 0 16px">📌 Nova Demanda de Compra</h2>
+     <table style="width:100%;border-collapse:collapse;">
+       <tr><td style="padding:8px 0;color:#8a6a6a;width:160px">Item</td><td style="padding:8px 0;font-weight:600">${descricao}</td></tr>
+       ${parseFloat(quantidade) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a">Quantidade</td><td style="padding:8px 0;font-weight:600">${quantidade} ${unidade || ''}</td></tr>` : ''}
+       ${pi && pi.numero_pi ? `<tr><td style="padding:8px 0;color:#8a6a6a">PI</td><td style="padding:8px 0;font-weight:600">${pi.numero_pi}</td></tr>` : ''}
+       ${req.usuario && req.usuario.nome ? `<tr><td style="padding:8px 0;color:#8a6a6a">Solicitante</td><td style="padding:8px 0;font-weight:600">${req.usuario.nome}</td></tr>` : ''}
+     </table>
+     <p style="margin:16px 0 0;color:#6A1B9A;font-weight:600">Compras: verificar disponibilidade e marcar "Tenho" ou "Não tenho".</p>`
+  )
+  res.json({ id: r.insertId })
+})
+
+app.patch('/api/demandas/:id/status', autenticar(['admin', 'compras']), async (req, res) => {
+  const { status } = req.body
+  if (!['tem', 'nao_tem', 'pendente'].includes(status)) return res.status(400).json({ erro: 'Status inválido.' })
+  const quem = req.usuario && req.usuario.nome ? req.usuario.nome : null
+  await pool.query('UPDATE demandas SET status = ?, respondido_por = ?, respondido_em = NOW() WHERE id = ?', [status, quem, req.params.id])
+
+  const [[d]] = await pool.query('SELECT d.*, p.numero_pi FROM demandas d LEFT JOIN pedidos p ON p.id = d.pi_id WHERE d.id = ?', [req.params.id])
+  if (d) {
+    const label = status === 'tem' ? '✔ TEM em estoque' : status === 'nao_tem' ? '✖ NÃO TEM — precisa comprar' : 'Pendente'
+    const cor = status === 'nao_tem' ? '#ED3237' : '#2E7D32'
+    enviarEmail(
+      `📌 Demanda respondida (${status === 'nao_tem' ? 'NÃO TEM' : status === 'tem' ? 'TEM' : 'pendente'}) — ${d.descricao}`,
+      `<h2 style="color:${cor};margin:0 0 16px">📌 Demanda de Compra Respondida</h2>
+       <table style="width:100%;border-collapse:collapse;">
+         <tr><td style="padding:8px 0;color:#8a6a6a;width:160px">Item</td><td style="padding:8px 0;font-weight:600">${d.descricao}</td></tr>
+         ${d.numero_pi ? `<tr><td style="padding:8px 0;color:#8a6a6a">PI</td><td style="padding:8px 0;font-weight:600">${d.numero_pi}</td></tr>` : ''}
+         <tr><td style="padding:8px 0;color:#8a6a6a">Resposta</td><td style="padding:8px 0;font-weight:700;color:${cor}">${label}</td></tr>
+         ${quem ? `<tr><td style="padding:8px 0;color:#8a6a6a">Respondido por</td><td style="padding:8px 0;font-weight:600">${quem}</td></tr>` : ''}
+       </table>`
+    )
+  }
+  res.json({ ok: true })
+})
+
+app.delete('/api/demandas/:id', autenticar(['admin', 'almoxarifado']), async (req, res) => {
+  await pool.query('DELETE FROM demandas WHERE id = ?', [req.params.id])
+  res.json({ ok: true })
+})
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'))
 })

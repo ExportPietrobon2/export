@@ -25,6 +25,7 @@
 
     <ul class="nav nav-tabs mb-4" id="abas-compras">
       <li class="nav-item"><button class="nav-link active" data-aba-compra="registro">📝 Compras</button></li>
+      <li class="nav-item"><button class="nav-link" data-aba-compra="demandas">📌 Demandas</button></li>
       <li class="nav-item"><button class="nav-link" data-aba-compra="sugestoes">💡 O que comprar</button></li>
       <li class="nav-item"><button class="nav-link" data-aba-compra="entradas">📦 Entradas B2</button></li>
     </ul>
@@ -73,6 +74,36 @@
       </div>
 
       <div id="lista-compras"><p class="text-muted">Carregando...</p></div>
+    </div>
+
+    <div id="aba-demandas" style="display:none">
+      <div class="card border-0 shadow-sm mb-4" id="card-nova-demanda">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3">📌 Lançar Demanda</h5>
+          <form id="form-demanda">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold small">O que está faltando *</label>
+                <input type="text" id="d-descricao" class="form-control" placeholder="Ex: Embalagem da Bala Dura 250g" required>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label fw-semibold small">Quantidade</label>
+                <input type="number" id="d-quantidade" class="form-control" placeholder="0" min="0" step="any">
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label fw-semibold small">Unidade</label>
+                <input type="text" id="d-unidade" class="form-control" placeholder="kg / un / cx">
+              </div>
+              <div class="col-12 col-md-2">
+                <label class="form-label fw-semibold small">PI (opcional)</label>
+                <select id="d-pi" class="form-select"><option value="">—</option></select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-ok-grande w-100 mt-3" id="btn-enviar-demanda">✔ Enviar Demanda</button>
+          </form>
+        </div>
+      </div>
+      <div id="lista-demandas"><p class="text-muted">Carregando...</p></div>
     </div>
 
     <div id="aba-sugestoes" style="display:none">

@@ -83,6 +83,13 @@ export const api = {
     declaracaoPendente: () => requisitar('GET', '/api/alertas/declaracao')
   },
 
+  demandas: {
+    listar: () => requisitar('GET', '/api/demandas'),
+    criar: (dados) => requisitar('POST', '/api/demandas', dados),
+    responder: (id, status) => requisitar('PATCH', `/api/demandas/${id}/status`, { status }),
+    excluir: (id) => requisitar('DELETE', `/api/demandas/${id}`)
+  },
+
   compras: {
     listar: () => requisitar('GET', '/api/compras'),
     sugestoes: () => requisitar('GET', '/api/compras/sugestoes'),
