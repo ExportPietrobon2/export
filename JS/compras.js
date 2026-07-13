@@ -1,74 +1,13 @@
 import { api } from './api.js'
 import { exigirPapel } from './auth.js'
 import { montarCabecalho } from './cabecalho.js'
+import { iniciarPedidosCompra } from './demandas.js'
 
 const tipoLabel = { embalagem: 'Embalagem', rotulo: 'Rótulo', caixa: 'Caixa', etiqueta: 'Etiqueta', outro: 'Outro' }
 const statusLabel = { pendente: 'Pendente', comprado: 'Comprado', em_transito: 'Em trânsito', recebido: 'Recebido' }
 const statusCor = { pendente: 'bg-secondary', comprado: 'bg-primary', em_transito: 'bg-warning text-dark', recebido: 'bg-success' }
 let podeComprar = false
 let podeCriarDemanda = false
-
-const demandaStatus = { pendente: { label: 'Pendente', cor: 'bg-warning text-dark' }, tem: { label: '✔ Tem', cor: 'bg-success' }, nao_tem: { label: '✖ Não tem', cor: 'bg-danger' } }
-
-async function carregarDemandas() {
-  const container = document.getElementById('lista-demandas')
-  const demandas = await api.demandas.listar()
-  if (!Array.isArray(demandas)) { container.innerHTML = '<p class="text-danger">Erro ao carregar.</p>'; return }
-  if (!demandas.length) {
-    container.innerHTML = '<p class="text-muted fst-italic">Nenhuma demanda lançada.</p>'
-    return
-  }
-  container.innerHTML = demandas.map((d) => {
-    const st = demandaStatus[d.status] || demandaStatus.pendente
-    return `
-      <div class="card border-0 shadow-sm mb-2">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-1">
-            <div>
-              <div class="fw-bold">${d.descricao}</div>
-              <div class="small text-muted">
-                ${d.quantidade > 0 ? `${d.quantidade} ${d.unidade || ''}` : ''}
-                ${d.numero_pi ? ` · 🔗 PI ${d.numero_pi}` : ''}
-                ${d.solicitante ? ` · 🙋 ${d.solicitante}` : ''}
-              </div>
-            </div>
-            <span class="badge ${st.cor}">${st.label}</span>
-          </div>
-          ${d.respondido_por ? `<div class="small text-muted mb-2">Respondido por ${d.respondido_por}</div>` : ''}
-          ${podeComprar ? `<div class="d-flex gap-2 flex-wrap">
-            <button class="btn btn-sm ${d.status === 'tem' ? 'btn-success' : 'btn-outline-success'}" onclick="responderDemanda(${d.id}, 'tem')">✔ Tenho</button>
-            <button class="btn btn-sm ${d.status === 'nao_tem' ? 'btn-danger' : 'btn-outline-danger'}" onclick="responderDemanda(${d.id}, 'nao_tem')">✖ Não tenho</button>
-          </div>` : ''}
-          ${podeCriarDemanda ? `<button class="btn btn-sm btn-outline-secondary mt-2" onclick="excluirDemanda(${d.id})">🗑 Excluir</button>` : ''}
-        </div>
-      </div>`
-  }).join('')
-}
-
-window.responderDemanda = async function (id, status) {
-  const r = await api.demandas.responder(id, status)
-  if (r?.erro) { alert(r.erro || 'Erro ao responder.'); return }
-  carregarDemandas()
-}
-
-window.excluirDemanda = async function (id) {
-  if (!confirm('Excluir esta demanda?')) return
-  await api.demandas.excluir(id)
-  carregarDemandas()
-}
-
-async function carregarPisDemanda() {
-  const select = document.getElementById('d-pi')
-  if (!select) return
-  const pedidos = await api.pedidos.listar()
-  if (!Array.isArray(pedidos)) return
-  pedidos.forEach((p) => {
-    const o = document.createElement('option')
-    o.value = p.id
-    o.textContent = `PI ${p.numero_pi}${p.cliente ? ' — ' + p.cliente : ''}`
-    select.appendChild(o)
-  })
-}
 
 function dataInput(v) { return v ? String(v).slice(0, 10) : '' }
 function dataBR(v) { return v ? new Date(dataInput(v) + 'T00:00:00').toLocaleDateString('pt-BR') : '—' }
@@ -242,29 +181,6 @@ document.getElementById('form-compra').addEventListener('submit', async (e) => {
   carregarCompras()
 })
 
-document.getElementById('form-demanda').addEventListener('submit', async (e) => {
-  e.preventDefault()
-  const descricao = document.getElementById('d-descricao').value.trim()
-  if (!descricao) return
-  const btn = document.getElementById('btn-enviar-demanda')
-  btn.disabled = true
-  btn.textContent = 'Enviando...'
-
-  const dados = {
-    descricao,
-    quantidade: document.getElementById('d-quantidade').value || 0,
-    unidade: document.getElementById('d-unidade').value.trim() || null,
-    pi_id: document.getElementById('d-pi').value || null
-  }
-
-  const r = await api.demandas.criar(dados)
-  btn.disabled = false
-  btn.textContent = '✔ Enviar Demanda'
-  if (r?.erro) { alert(r.erro || 'Erro ao enviar demanda.'); return }
-  e.target.reset()
-  carregarDemandas()
-})
-
 document.getElementById('toggle-ocultar-recebidas').addEventListener('change', carregarCompras)
 
 document.querySelectorAll('[data-aba-compra]').forEach((btn) => {
@@ -276,7 +192,7 @@ document.querySelectorAll('[data-aba-compra]').forEach((btn) => {
     document.getElementById('aba-demandas').style.display = aba === 'demandas' ? 'block' : 'none'
     document.getElementById('aba-sugestoes').style.display = aba === 'sugestoes' ? 'block' : 'none'
     document.getElementById('aba-entradas').style.display = aba === 'entradas' ? 'block' : 'none'
-    if (aba === 'demandas') carregarDemandas()
+    if (aba === 'demandas') iniciarPedidosCompra(document.getElementById('wrap-pedidos-compra'), { podeCriar: podeCriarDemanda, podeResponder: podeComprar })
     if (aba === 'sugestoes') carregarSugestoes()
     if (aba === 'entradas') carregarEntradasB2()
   })
@@ -292,11 +208,6 @@ async function iniciar() {
     const formCard = document.getElementById('form-compra').closest('.card')
     if (formCard) formCard.style.display = 'none'
   }
-  if (!podeCriarDemanda) {
-    const cardDemanda = document.getElementById('card-nova-demanda')
-    if (cardDemanda) cardDemanda.style.display = 'none'
-  }
-  carregarPisDemanda()
   carregarCompras()
 }
 

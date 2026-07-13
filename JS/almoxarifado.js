@@ -4,6 +4,10 @@ import { exigirPapel } from './auth.js'
 import { montarCabecalho } from './cabecalho.js'
 import { iniciarReferencia } from './referencia.js'
 import { seloPrazoDeclaracaoHtml } from './alertas.js'
+import { iniciarPedidosCompra } from './demandas.js'
+
+let podeCriarPedido = false
+let podeResponderPedido = false
 
 const selectPi = document.getElementById('select-pi')
 const containerConteudo = document.getElementById('conteudo-pi')
@@ -380,10 +384,12 @@ document.querySelectorAll('[data-aba]').forEach((btn) => {
     document.getElementById('aba-estoque-geral').style.display = aba === 'estoque-geral' ? 'block' : 'none'
     document.getElementById('aba-recebimentos').style.display = aba === 'recebimentos' ? 'block' : 'none'
     document.getElementById('aba-rendimentos').style.display = aba === 'rendimentos' ? 'block' : 'none'
+    document.getElementById('aba-pedidos').style.display = aba === 'pedidos' ? 'block' : 'none'
 
     if (aba === 'estoque-geral') carregarEstoqueGeral()
     if (aba === 'recebimentos') carregarRecebimentos()
     if (aba === 'rendimentos') iniciarReferencia(document.getElementById('conteudo-referencia-wrapper-almox'))
+    if (aba === 'pedidos') iniciarPedidosCompra(document.getElementById('wrap-pedidos-compra-almox'), { podeCriar: podeCriarPedido, podeResponder: podeResponderPedido })
   })
 })
 
@@ -419,6 +425,8 @@ async function iniciar() {
   if (!perfil) return
   montarCabecalho(perfil.papel)
   window._convidado = !['admin', 'almoxarifado'].includes(perfil.papel)
+  podeCriarPedido = ['admin', 'almoxarifado'].includes(perfil.papel)
+  podeResponderPedido = ['admin', 'compras'].includes(perfil.papel)
   carregarPedidos()
   carregarAlertaDeclaracao()
   setInterval(carregarAlertaDeclaracao, 5 * 60 * 1000)
