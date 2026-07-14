@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken')
 const cloudinary = require('cloudinary').v2
 const multer = require('multer')
 const path = require('path')
-const { Resend } = require('resend')
+const nodemailer = require('nodemailer')
 
 const app = express()
 app.use(express.json())
@@ -22,20 +22,31 @@ const upload = multer({ storage: multer.memoryStorage() })
 const EMAIL_TESTE = process.env.EMAIL_TESTE || 'pietrobonexport2@gmail.com'
 const MODO_TESTE = process.env.MODO_TESTE !== 'false'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const SMTP_USER = process.env.SMTP_USER
+const SMTP_PASS = process.env.SMTP_PASS
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'email-ssl.com.br',
+  port: Number(process.env.SMTP_PORT) || 465,
+  secure: (process.env.SMTP_PORT || '465') === '465',
+  auth: { user: SMTP_USER, pass: SMTP_PASS }
+})
 
-async function getDestinatarios() {
+async function getDestinatarios(papeis) {
   if (MODO_TESTE) return [EMAIL_TESTE]
+  if (papeis && papeis.length) {
+    const [rows] = await pool.query('SELECT email FROM usuarios WHERE papel IN (?)', [papeis])
+    return rows.map((r) => r.email)
+  }
   const [rows] = await pool.query('SELECT email FROM usuarios')
   return rows.map((r) => r.email)
 }
 
-async function enviarEmail(assunto, corpo) {
+async function enviarEmail(assunto, corpo, papeis) {
   try {
-    const destinatarios = await getDestinatarios()
-    await resend.emails.send({
-      from: 'Pietrobon · Insumos <onboarding@resend.dev>',
-      to: destinatarios,
+    const destinatarios = await getDestinatarios(papeis)
+    await transporter.sendMail({
+      from: `"Pietrobon · Insumos" <${SMTP_USER}>`,
+      to: destinatarios.join(', '),
       subject: assunto,
       html: `
         <div style="font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;">
@@ -700,6 +711,7 @@ const SQL_DECLARACAO_PENDENTE = `
   JOIN pedidos p ON p.id = pp.pi_id
   WHERE p.concluida = 0 AND pp.declarado_em IS NULL
     AND pp.criado_em <= DATE_SUB(NOW(), INTERVAL 48 HOUR)
+    AND NOT EXISTS (SELECT 1 FROM insumos_produto ip WHERE ip.produto_id = pp.id AND ip.sobra > 0)
   ORDER BY pp.criado_em ASC`
 
 async function verificarAlertasDeclaracao() {
@@ -831,6 +843,24 @@ app.delete('/api/compras/:id', autenticar(['admin', 'compras']), async (req, res
   res.json({ ok: true })
 })
 
+app.patch('/api/compras/:id/observacao', autenticar(['admin', 'compras']), async (req, res) => {
+  const { observacoes } = req.body
+  await pool.query('UPDATE compras SET observacoes = ? WHERE id = ?', [observacoes || null, req.params.id])
+  const [[c]] = await pool.query('SELECT descricao FROM compras WHERE id = ?', [req.params.id])
+  if (c && observacoes && observacoes.trim()) {
+    enviarEmail(
+      `📝 Observação na compra — ${c.descricao}`,
+      `<h2 style="color:#E65100;margin:0 0 16px">📝 Observação / Verificação de Compra</h2>
+       <table style="width:100%;border-collapse:collapse;">
+         <tr><td style="padding:8px 0;color:#8a6a6a;width:140px">Item</td><td style="padding:8px 0;font-weight:600">${c.descricao}</td></tr>
+         <tr><td style="padding:8px 0;color:#8a6a6a">Observação</td><td style="padding:8px 0;font-weight:600">${observacoes}</td></tr>
+       </table>`,
+      ['compras', 'admin']
+    )
+  }
+  res.json({ ok: true })
+})
+
 app.get('/api/compras/sugestoes', autenticar(TODOS), async (req, res) => {
   const [rows] = await pool.query(`
     SELECT p.id as pi_id, p.numero_pi, p.cliente, p.data_embarque,
@@ -957,6 +987,18 @@ app.delete('/api/demandas/:id', autenticar(['admin', 'almoxarifado']), async (re
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'))
+})
+
+app.use((err, req, res, next) => {
+  console.error('Erro na requisição:', err && err.message ? err.message : err)
+  if (!res.headersSent) res.status(500).json({ erro: 'Erro no servidor. Tente novamente.' })
+})
+
+process.on('unhandledRejection', (err) => {
+  console.error('Erro não tratado (promise):', err && err.message ? err.message : err)
+})
+process.on('uncaughtException', (err) => {
+  console.error('Exceção não tratada:', err && err.message ? err.message : err)
 })
 
 const PORTA = process.env.PORT || 8080

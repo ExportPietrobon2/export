@@ -42,9 +42,14 @@ export function horasDesde(dataStr) {
   return Math.floor((Date.now() - new Date(dataStr).getTime()) / 3600000)
 }
 
+function temAlgoDeclarado(produto) {
+  return (produto.insumos_produto || []).some((i) => Number(i.sobra) > 0)
+}
+
 export function produtoPendenteDeclaracao(produto) {
   if (!produto || produto.declarado_em) return false
   if (!produto.criado_em) return false
+  if (temAlgoDeclarado(produto)) return false
   return (Date.now() - new Date(produto.criado_em).getTime()) >= PRAZO_DECLARACAO_MS
 }
 
@@ -55,6 +60,7 @@ export function piNaoDeclarada(pedido) {
 
 export function horasRestantesDeclaracao(produto) {
   if (!produto || produto.declarado_em || !produto.criado_em) return null
+  if (temAlgoDeclarado(produto)) return null
   const restanteMs = PRAZO_DECLARACAO_MS - (Date.now() - new Date(produto.criado_em).getTime())
   return Math.ceil(restanteMs / 3600000)
 }
