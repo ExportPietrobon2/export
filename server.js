@@ -259,6 +259,11 @@ app.get('/api/produtos/:produtoId/insumos', autenticar(TODOS), async (req, res) 
 
 app.patch('/api/produtos/:produtoId/insumos', autenticar(['admin', 'almoxarifado']), async (req, res) => {
   const { insumos, rotulos, observacoes, quantidade } = req.body
+
+  const [antesInsumos] = await pool.query('SELECT tipo, confirmado FROM insumos_produto WHERE produto_id = ?', [req.params.produtoId])
+  const antesSemEtiqueta = antesInsumos.filter((i) => i.tipo !== 'etiqueta')
+  const eraLiberado = antesSemEtiqueta.length > 0 && antesSemEtiqueta.every((i) => i.confirmado)
+
   for (const insumo of (insumos || [])) {
     if (insumo.tipo === 'rotulo') continue
     let confirmado = 0
@@ -304,25 +309,10 @@ app.patch('/api/produtos/:produtoId/insumos', autenticar(['admin', 'almoxarifado
   if (produtoInfo[0]) {
     const { numero_pi, cliente, produto } = produtoInfo[0]
 
-    const etiqueta = todosInsumos.find((i) => i.tipo === 'etiqueta')
-    if (etiqueta && Number(etiqueta.sobra) > 0 && Number(etiqueta.sobra) < 100) {
-      enviarEmail(
-        `⚠ Estoque baixo de etiquetas — PI ${numero_pi}`,
-        `<h2 style="color:#E65100;margin:0 0 16px">⚠ Estoque Baixo de Etiquetas</h2>
-         <table style="width:100%;border-collapse:collapse;">
-           <tr><td style="padding:8px 0;color:#8a6a6a;width:140px">PI</td><td style="padding:8px 0;font-weight:600">${numero_pi}</td></tr>
-           <tr><td style="padding:8px 0;color:#8a6a6a">Cliente</td><td style="padding:8px 0;font-weight:600">${cliente || '—'}</td></tr>
-           <tr><td style="padding:8px 0;color:#8a6a6a">Produto</td><td style="padding:8px 0;font-weight:600">${produto}</td></tr>
-           <tr><td style="padding:8px 0;color:#8a6a6a">Etiquetas</td><td style="padding:8px 0;font-weight:600;color:#E65100">${etiqueta.sobra} unidades restantes</td></tr>
-         </table>`
-      )
-    }
-
     const semEtiqueta = todosInsumos.filter((i) => i.tipo !== 'etiqueta')
-    const tudo = semEtiqueta.every((i) => i.confirmado)
-    const algum = semEtiqueta.some((i) => i.confirmado)
+    const tudo = semEtiqueta.length > 0 && semEtiqueta.every((i) => i.confirmado)
 
-    if (tudo) {
+    if (tudo && !eraLiberado) {
       enviarEmail(
         `✅ PI Liberada — ${numero_pi}`,
         `<h2 style="color:#2E7D32;margin:0 0 16px">✅ PI Liberada para Produção</h2>
@@ -332,17 +322,6 @@ app.patch('/api/produtos/:produtoId/insumos', autenticar(['admin', 'almoxarifado
            <tr><td style="padding:8px 0;color:#8a6a6a">Produto</td><td style="padding:8px 0;font-weight:600">${produto}</td></tr>
          </table>
          <p style="margin:16px 0 0;color:#2E7D32;font-weight:600">Todos os insumos estão disponíveis para produção.</p>`
-      )
-    } else if (!algum) {
-      enviarEmail(
-        `🚫 PI Bloqueada — ${numero_pi}`,
-        `<h2 style="color:#ED3237;margin:0 0 16px">🚫 PI com Insumos Insuficientes</h2>
-         <table style="width:100%;border-collapse:collapse;">
-           <tr><td style="padding:8px 0;color:#8a6a6a;width:140px">PI</td><td style="padding:8px 0;font-weight:600">${numero_pi}</td></tr>
-           <tr><td style="padding:8px 0;color:#8a6a6a">Cliente</td><td style="padding:8px 0;font-weight:600">${cliente || '—'}</td></tr>
-           <tr><td style="padding:8px 0;color:#8a6a6a">Produto</td><td style="padding:8px 0;font-weight:600">${produto}</td></tr>
-         </table>
-         <p style="margin:16px 0 0;color:#ED3237;font-weight:600">Um ou mais insumos estão com estoque insuficiente.</p>`
       )
     }
   }
@@ -507,22 +486,6 @@ app.post('/api/estoque/entrada', autenticar(['admin', 'deposito']), upload.field
     [produto || null, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0, fotoUrl, fotoNotaUrl, localizacao || null]
   )
 
-  const tipoEntrada = []
-  if (parseFloat(embalagem_kg) > 0) tipoEntrada.push(`${embalagem_kg} kg embalagem`)
-  if (parseFloat(rotulo_kg) > 0) tipoEntrada.push(`${rotulo_kg} kg rótulo`)
-  if (parseInt(pallet_caixas) > 0) tipoEntrada.push(`${pallet_caixas} pallet(s) de caixa`)
-
-  enviarEmail(
-    '📥 Nova entrada no estoque B2',
-    `<h2 style="color:#1565C0;margin:0 0 16px">📥 Entrada de Insumos — B2</h2>
-     <table style="width:100%;border-collapse:collapse;">
-       ${localizacao ? `<tr><td style="padding:8px 0;color:#8a6a6a;width:160px">Localização</td><td style="padding:8px 0;font-weight:600">${localizacao}</td></tr>` : ''}
-       ${parseFloat(embalagem_kg) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a;width:160px">Embalagem</td><td style="padding:8px 0;font-weight:600">${embalagem_kg} kg</td></tr>` : ''}
-       ${parseFloat(rotulo_kg) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a">Rótulo</td><td style="padding:8px 0;font-weight:600">${rotulo_kg} kg</td></tr>` : ''}
-       ${parseInt(pallet_caixas) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a">Pallets de caixa</td><td style="padding:8px 0;font-weight:600">${pallet_caixas} pallet(s)</td></tr>` : ''}
-     </table>`
-  )
-
   res.json({ ok: true })
 })
 
@@ -578,20 +541,6 @@ app.post('/api/estoque/vincular', autenticar(['admin', 'almoxarifado']), async (
   await pool.query(
     'INSERT INTO vinculos_insumos (entrada_id, pi_id, produto, embalagem_kg, rotulo_kg, pallet_caixas) VALUES (?, ?, ?, ?, ?, ?)',
     [entrada_id, pi_id, produto || null, parseFloat(embalagem_kg) || 0, parseFloat(rotulo_kg) || 0, parseInt(pallet_caixas) || 0]
-  )
-
-  const [[pi]] = await pool.query('SELECT numero_pi, cliente FROM pedidos WHERE id = ?', [pi_id])
-
-  enviarEmail(
-    `🔗 Estoque vinculado — PI ${pi?.numero_pi}`,
-    `<h2 style="color:#6A1B9A;margin:0 0 16px">🔗 Insumos Vinculados à PI</h2>
-     <table style="width:100%;border-collapse:collapse;">
-       <tr><td style="padding:8px 0;color:#8a6a6a;width:160px">PI</td><td style="padding:8px 0;font-weight:600">${pi?.numero_pi}</td></tr>
-       ${pi?.cliente ? `<tr><td style="padding:8px 0;color:#8a6a6a">Cliente</td><td style="padding:8px 0;font-weight:600">${pi.cliente}</td></tr>` : ''}
-       ${parseFloat(embalagem_kg) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a">Embalagem</td><td style="padding:8px 0;font-weight:600">${embalagem_kg} kg</td></tr>` : ''}
-       ${parseFloat(rotulo_kg) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a">Rótulo</td><td style="padding:8px 0;font-weight:600">${rotulo_kg} kg</td></tr>` : ''}
-       ${parseInt(pallet_caixas) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a">Pallets caixa</td><td style="padding:8px 0;font-weight:600">${pallet_caixas}</td></tr>` : ''}
-     </table>`
   )
 
   res.json({ ok: true })
@@ -788,18 +737,6 @@ app.post('/api/compras', autenticar(['admin', 'compras']), async (req, res) => {
      pi_id || null, observacoes || null, status || 'comprado']
   )
 
-  const prevFmt = data_prevista ? new Date(data_prevista + 'T00:00:00').toLocaleDateString('pt-BR') : '—'
-  enviarEmail(
-    `🛒 Nova compra registrada — ${descricao}`,
-    `<h2 style="color:#1565C0;margin:0 0 16px">🛒 Compra Registrada</h2>
-     <table style="width:100%;border-collapse:collapse;">
-       <tr><td style="padding:8px 0;color:#8a6a6a;width:160px">Item</td><td style="padding:8px 0;font-weight:600">${descricao}</td></tr>
-       <tr><td style="padding:8px 0;color:#8a6a6a">Tipo</td><td style="padding:8px 0;font-weight:600">${tipoLabelCompra[tipo] || 'Outro'}</td></tr>
-       ${parseFloat(quantidade) > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a">Quantidade</td><td style="padding:8px 0;font-weight:600">${quantidade} ${unidade || ''}</td></tr>` : ''}
-       ${fornecedor ? `<tr><td style="padding:8px 0;color:#8a6a6a">Fornecedor</td><td style="padding:8px 0;font-weight:600">${fornecedor}</td></tr>` : ''}
-       <tr><td style="padding:8px 0;color:#8a6a6a">Chegada prevista</td><td style="padding:8px 0;font-weight:600">${prevFmt}</td></tr>
-     </table>`
-  )
   res.json({ id: r.insertId })
 })
 
