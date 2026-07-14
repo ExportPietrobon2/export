@@ -201,7 +201,8 @@ app.patch('/api/pedidos/:id/embarque', autenticar(['admin', 'gerente_producao'])
          ${pi.cliente ? `<tr><td style="padding:8px 0;color:#8a6a6a">Cliente</td><td style="padding:8px 0;font-weight:600">${pi.cliente}</td></tr>` : ''}
          ${pi.destino ? `<tr><td style="padding:8px 0;color:#8a6a6a">Destino</td><td style="padding:8px 0;font-weight:600">${pi.destino}</td></tr>` : ''}
          <tr><td style="padding:8px 0;color:#8a6a6a">Data de embarque</td><td style="padding:8px 0;font-weight:600;color:#1565C0">${dataFmt}</td></tr>
-       </table>`
+       </table>`,
+      ['admin', 'gerente_producao', 'almoxarifado']
     )
   }
   res.json({ ok: true })
@@ -326,7 +327,8 @@ app.patch('/api/produtos/:produtoId/insumos', autenticar(['admin', 'almoxarifado
            <tr><td style="padding:8px 0;color:#8a6a6a">Cliente</td><td style="padding:8px 0;font-weight:600">${cliente || '—'}</td></tr>
            <tr><td style="padding:8px 0;color:#8a6a6a">Produto</td><td style="padding:8px 0;font-weight:600">${produto}</td></tr>
          </table>
-         <p style="margin:16px 0 0;color:#2E7D32;font-weight:600">Todos os insumos estão disponíveis para produção.</p>`
+         <p style="margin:16px 0 0;color:#2E7D32;font-weight:600">Todos os insumos estão disponíveis para produção.</p>`,
+        ['admin', 'gerente_producao', 'almoxarifado']
       )
     }
   }
@@ -407,7 +409,8 @@ app.patch('/api/recebimentos/:id', autenticar(['admin', 'deposito']), upload.fie
          ${produto ? `<tr><td style="padding:8px 0;color:#8a6a6a">Produto</td><td style="padding:8px 0;font-weight:600">${produto}</td></tr>` : ''}
          <tr><td style="padding:8px 0;color:#8a6a6a">Insumo</td><td style="padding:8px 0;font-weight:600">${tipoLabel}</td></tr>
          ${qtd ? `<tr><td style="padding:8px 0;color:#8a6a6a">Quantidade</td><td style="padding:8px 0;font-weight:600">${qtd}</td></tr>` : ''}
-       </table>`
+       </table>`,
+      ['admin', 'almoxarifado']
     )
   }
 
@@ -651,7 +654,8 @@ async function verificarAlertasEmbarque() {
            <th style="text-align:left;padding:8px 10px;border-bottom:2px solid #ED3237">Embarque</th>
          </tr></thead>
          <tbody>${linhas}</tbody>
-       </table>`
+       </table>`,
+      ['admin', 'gerente_producao']
     )
     console.log(`Alerta de embarque enviado: ${alertas.length} PI(s)`)
   } catch (e) {
@@ -699,7 +703,8 @@ async function verificarAlertasDeclaracao() {
            <th style="text-align:left;padding:8px 10px;border-bottom:2px solid #E65100">Situação</th>
          </tr></thead>
          <tbody>${linhas}</tbody>
-       </table>`
+       </table>`,
+      ['admin', 'almoxarifado']
     )
     console.log(`Alerta de declaração enviado: ${rows.length} produto(s)`)
   } catch (e) {
@@ -778,7 +783,8 @@ app.patch('/api/compras/:id/receber', autenticar(['admin', 'compras']), async (r
          ${c.quantidade > 0 ? `<tr><td style="padding:8px 0;color:#8a6a6a">Quantidade</td><td style="padding:8px 0;font-weight:600">${c.quantidade} ${c.unidade || ''}</td></tr>` : ''}
          ${c.fornecedor ? `<tr><td style="padding:8px 0;color:#8a6a6a">Fornecedor</td><td style="padding:8px 0;font-weight:600">${c.fornecedor}</td></tr>` : ''}
          ${c.numero_pi ? `<tr><td style="padding:8px 0;color:#8a6a6a">PI vinculada</td><td style="padding:8px 0;font-weight:600">${c.numero_pi}</td></tr>` : ''}
-       </table>`
+       </table>`,
+      ['admin', 'deposito', 'almoxarifado']
     )
   }
   res.json({ ok: true })
@@ -853,7 +859,8 @@ async function verificarComprasAtrasadas() {
            <th style="text-align:left;padding:8px 10px;border-bottom:2px solid #ED3237">Situação</th>
          </tr></thead>
          <tbody>${linhas}</tbody>
-       </table>`
+       </table>`,
+      ['admin', 'compras']
     )
     console.log(`Alerta de compras atrasadas enviado: ${rows.length}`)
   } catch (e) {
@@ -897,7 +904,8 @@ app.post('/api/demandas', autenticar(['admin', 'almoxarifado']), async (req, res
        ${pi && pi.numero_pi ? `<tr><td style="padding:8px 0;color:#8a6a6a">PI</td><td style="padding:8px 0;font-weight:600">${pi.numero_pi}</td></tr>` : ''}
        ${req.usuario && req.usuario.nome ? `<tr><td style="padding:8px 0;color:#8a6a6a">Solicitante</td><td style="padding:8px 0;font-weight:600">${req.usuario.nome}</td></tr>` : ''}
      </table>
-     <p style="margin:16px 0 0;color:#6A1B9A;font-weight:600">Compras: verificar disponibilidade e marcar "Tenho" ou "Não tenho".</p>`
+     <p style="margin:16px 0 0;color:#6A1B9A;font-weight:600">Compras: verificar disponibilidade e marcar "Tenho" ou "Não tenho".</p>`,
+    ['admin', 'compras']
   )
   res.json({ id: r.insertId })
 })
@@ -920,7 +928,8 @@ app.patch('/api/demandas/:id/status', autenticar(['admin', 'compras']), async (r
          ${d.numero_pi ? `<tr><td style="padding:8px 0;color:#8a6a6a">PI</td><td style="padding:8px 0;font-weight:600">${d.numero_pi}</td></tr>` : ''}
          <tr><td style="padding:8px 0;color:#8a6a6a">Resposta</td><td style="padding:8px 0;font-weight:700;color:${cor}">${label}</td></tr>
          ${quem ? `<tr><td style="padding:8px 0;color:#8a6a6a">Respondido por</td><td style="padding:8px 0;font-weight:600">${quem}</td></tr>` : ''}
-       </table>`
+       </table>`,
+      ['admin', 'almoxarifado', 'compras']
     )
   }
   res.json({ ok: true })
@@ -929,28 +938,6 @@ app.patch('/api/demandas/:id/status', autenticar(['admin', 'compras']), async (r
 app.delete('/api/demandas/:id', autenticar(['admin', 'almoxarifado']), async (req, res) => {
   await pool.query('DELETE FROM demandas WHERE id = ?', [req.params.id])
   res.json({ ok: true })
-})
-
-app.post('/api/testar-email', autenticar(['admin']), async (req, res) => {
-  const para = (req.body && req.body.para && String(req.body.para).trim()) || EMAIL_REMETENTE
-  if (!BREVO_API_KEY) return res.status(400).json({ erro: 'BREVO_API_KEY não configurada no Railway.' })
-  try {
-    const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json', 'accept': 'application/json' },
-      body: JSON.stringify({
-        sender: { email: EMAIL_REMETENTE, name: 'Pietrobon · Insumos' },
-        to: [{ email: para }],
-        subject: '✅ Teste de e-mail — Controle de Insumos',
-        htmlContent: '<div style="font-family:sans-serif"><h2 style="color:#ED3237">✅ Teste de e-mail</h2><p>Se você recebeu esta mensagem, o envio de notificações do sistema está funcionando corretamente.</p></div>'
-      })
-    })
-    if (resp.ok) return res.json({ ok: true, para })
-    const txt = await resp.text()
-    return res.status(500).json({ erro: `Brevo ${resp.status}: ${txt}` })
-  } catch (e) {
-    return res.status(500).json({ erro: e.message })
-  }
 })
 
 app.get('*', (req, res) => {
