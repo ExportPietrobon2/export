@@ -340,6 +340,25 @@ async function iniciar() {
   if (!perfil) return
   montarCabecalho(perfil.papel)
   window._convidado = perfil.papel !== 'admin'
+
+  if (perfil.papel === 'admin') {
+    const btnEmail = document.getElementById('btn-testar-email')
+    if (btnEmail) {
+      btnEmail.classList.remove('d-none')
+      btnEmail.addEventListener('click', async () => {
+        const para = prompt('Enviar e-mail de teste para qual endereço?', '')
+        if (!para) return
+        btnEmail.disabled = true
+        btnEmail.textContent = 'Enviando...'
+        const r = await api.testarEmail(para)
+        btnEmail.disabled = false
+        btnEmail.textContent = '📧 Testar envio de e-mail'
+        if (r?.ok) alert('✅ E-mail de teste enviado para ' + r.para + '. Verifique a caixa de entrada (e o spam).')
+        else alert('❌ Falhou: ' + (r?.erro || 'erro desconhecido'))
+      })
+    }
+  }
+
   carregar()
 }
 

@@ -931,6 +931,28 @@ app.delete('/api/demandas/:id', autenticar(['admin', 'almoxarifado']), async (re
   res.json({ ok: true })
 })
 
+app.post('/api/testar-email', autenticar(['admin']), async (req, res) => {
+  const para = (req.body && req.body.para && String(req.body.para).trim()) || EMAIL_REMETENTE
+  if (!BREVO_API_KEY) return res.status(400).json({ erro: 'BREVO_API_KEY não configurada no Railway.' })
+  try {
+    const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json', 'accept': 'application/json' },
+      body: JSON.stringify({
+        sender: { email: EMAIL_REMETENTE, name: 'Pietrobon · Insumos' },
+        to: [{ email: para }],
+        subject: '✅ Teste de e-mail — Controle de Insumos',
+        htmlContent: '<div style="font-family:sans-serif"><h2 style="color:#ED3237">✅ Teste de e-mail</h2><p>Se você recebeu esta mensagem, o envio de notificações do sistema está funcionando corretamente.</p></div>'
+      })
+    })
+    if (resp.ok) return res.json({ ok: true, para })
+    const txt = await resp.text()
+    return res.status(500).json({ erro: `Brevo ${resp.status}: ${txt}` })
+  } catch (e) {
+    return res.status(500).json({ erro: e.message })
+  }
+})
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'))
 })
