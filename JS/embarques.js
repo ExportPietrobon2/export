@@ -162,6 +162,7 @@ function renderCard(pedido) {
       </div>
       <div class="mt-1 d-flex align-items-center gap-2 flex-wrap">
         <span class="badge ${pronta ? 'bg-success' : 'bg-danger'}">${pronta ? '✅ Pronto para produzir' : '⏳ Não pronto'}</span>
+        ${pedido.comentario_embarque ? '<span class="badge bg-primary">💬 Comentário do admin</span>' : ''}
         ${totalRecb > 0 ? `<span class="small text-muted">📦 Receb. B2: ${recebidos}/${totalRecb}</span>` : ''}
       </div>
     </div>
@@ -210,6 +211,13 @@ function renderCard(pedido) {
     <div class="secao-titulo-card mb-2">🚚 Recebimentos B2 por PI</div>
     ${renderRecebimentosB2(pedido.recebimentos_b2)}
   `
+
+  if (pedido.comentario_embarque) {
+    const secComentario = document.createElement('div')
+    secComentario.className = 'mt-3'
+    secComentario.innerHTML = `<div class="alert alert-primary mb-0"><strong>💬 Comentário do admin:</strong> ${pedido.comentario_embarque}</div>`
+    detalhe.appendChild(secComentario)
+  }
 
   detalhe.appendChild(secEmbarque)
   detalhe.appendChild(secAlmox)

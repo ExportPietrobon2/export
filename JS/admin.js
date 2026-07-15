@@ -249,6 +249,19 @@ function renderCard(pedido) {
     ${renderRecebimentosB2(pedido.recebimentos_b2)}
   `
 
+  if (!window._convidado) {
+    const secComentario = document.createElement('div')
+    secComentario.className = 'mt-3'
+    secComentario.innerHTML = `
+      <div class="secao-titulo-card mb-2">💬 Cobrar data de embarque (para o gerente)</div>
+      <div class="input-group input-group-sm">
+        <input type="text" class="form-control coment-embarque" data-id="${pedido.id}" placeholder="Ex.: Favor declarar a data de embarque desta PI" value="${(pedido.comentario_embarque || '').replace(/"/g, '&quot;')}">
+        <button class="btn btn-outline-primary" onclick="salvarComentarioEmbarque(${pedido.id})">💬 Enviar</button>
+      </div>
+    `
+    detalhe.appendChild(secComentario)
+  }
+
   detalhe.appendChild(secAlmox)
   detalhe.appendChild(secEstoque)
   detalhe.appendChild(secB2)
@@ -256,6 +269,21 @@ function renderCard(pedido) {
   card.appendChild(cabecalho)
   card.appendChild(detalhe)
   return card
+}
+
+window.salvarComentarioEmbarque = async function (id) {
+  const input = document.querySelector(`.coment-embarque[data-id="${id}"]`)
+  if (!input) return
+  const btn = input.nextElementSibling
+  const texto = input.value.trim()
+  const orig = btn.textContent
+  btn.disabled = true
+  btn.textContent = '...'
+  const r = await api.pedidos.comentarioEmbarque(id, texto)
+  btn.disabled = false
+  if (r?.erro) { btn.textContent = orig; alert('Erro ao enviar comentário.'); return }
+  btn.textContent = '✔ Enviado'
+  setTimeout(() => { btn.textContent = orig }, 2000)
 }
 
 async function carregar() {

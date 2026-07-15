@@ -208,6 +208,26 @@ app.patch('/api/pedidos/:id/embarque', autenticar(['admin', 'gerente_producao'])
   res.json({ ok: true })
 })
 
+app.patch('/api/pedidos/:id/comentario-embarque', autenticar(['admin']), async (req, res) => {
+  const { comentario } = req.body
+  await pool.query('UPDATE pedidos SET comentario_embarque = ? WHERE id = ?', [comentario || null, req.params.id])
+  const [[pi]] = await pool.query('SELECT numero_pi, cliente FROM pedidos WHERE id = ?', [req.params.id])
+  if (pi && comentario && comentario.trim()) {
+    enviarEmail(
+      `💬 Cobrança de embarque — PI ${pi.numero_pi}`,
+      `<h2 style="color:#1565C0;margin:0 0 16px">💬 Comentário do Admin — Data de Embarque</h2>
+       <table style="width:100%;border-collapse:collapse;">
+         <tr><td style="padding:8px 0;color:#8a6a6a;width:140px">PI</td><td style="padding:8px 0;font-weight:600">${pi.numero_pi}</td></tr>
+         ${pi.cliente ? `<tr><td style="padding:8px 0;color:#8a6a6a">Cliente</td><td style="padding:8px 0;font-weight:600">${pi.cliente}</td></tr>` : ''}
+         <tr><td style="padding:8px 0;color:#8a6a6a">Comentário</td><td style="padding:8px 0;font-weight:600">${comentario}</td></tr>
+       </table>
+       <p style="margin:16px 0 0;color:#1565C0;font-weight:600">Gerente: por favor, defina a data de embarque desta PI.</p>`,
+      ['admin', 'gerente_producao']
+    )
+  }
+  res.json({ ok: true })
+})
+
 app.patch('/api/pedidos/:id/concluir', autenticar(['admin']), async (req, res) => {
   const { concluida } = req.body
   await pool.query('UPDATE pedidos SET concluida = ? WHERE id = ?', [concluida ? 1 : 0, req.params.id])

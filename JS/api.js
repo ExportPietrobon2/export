@@ -51,6 +51,7 @@ export const api = {
     criar: (dados) => requisitar('POST', '/api/pedidos', dados),
     concluir: (id, concluida) => requisitar('PATCH', `/api/pedidos/${id}/concluir`, { concluida }),
     editarEmbarque: (id, data_embarque) => requisitar('PATCH', `/api/pedidos/${id}/embarque`, { data_embarque }),
+    comentarioEmbarque: (id, comentario) => requisitar('PATCH', `/api/pedidos/${id}/comentario-embarque`, { comentario }),
     excluir: (id) => requisitar('DELETE', `/api/pedidos/${id}`)
   },
 
