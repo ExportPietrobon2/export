@@ -572,3 +572,73 @@ body {
   font-size: 0.75rem;
   font-weight: 700;
 }
+
+/* ===== Refinamento visual (acabamento profissional) ===== */
+body { letter-spacing: 0.005em; }
+
+.container { max-width: 1140px; }
+
+/* Campos de formulário mais elegantes e com foco na cor da marca */
+.form-control, .form-select {
+  border-radius: 10px;
+  border: 1px solid #e7d3d3;
+  padding: 0.55rem 0.85rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 0.2rem rgba(247,151,51,0.18);
+}
+.form-control::placeholder { color: #c9a9a9; }
+.form-label { color: var(--muted); margin-bottom: 0.25rem; }
+
+/* Botões: transição suave e leve elevação */
+.btn { border-radius: 10px; }
+.btn:not(.btn-link):hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+/* Cards com leve realce ao passar o mouse */
+.card { transition: box-shadow 0.18s ease, transform 0.18s ease; }
+.card-pi-admin:hover, .card-recebimento:hover { box-shadow: var(--shadow-md) !important; }
+
+/* Cabeçalhos de tabela na identidade da marca */
+.table > thead th {
+  background: #fbeaea;
+  color: var(--red-dark);
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 2px solid var(--border);
+}
+.table td, .table th { vertical-align: middle; }
+
+/* Abas (nav-tabs) mais discretas e alinhadas à marca */
+.nav-tabs { border-bottom: 2px solid var(--border); gap: 2px; }
+.nav-tabs .nav-link {
+  border: none;
+  color: var(--muted);
+  font-weight: 600;
+  border-radius: 10px 10px 0 0;
+  padding: 9px 16px;
+}
+.nav-tabs .nav-link:hover { background: #fbeaea; color: var(--red-dark); }
+.nav-tabs .nav-link.active {
+  color: var(--red-dark);
+  background: transparent;
+  border-bottom: 3px solid var(--red);
+}
+
+/* Badges com melhor legibilidade */
+.badge { font-weight: 600; letter-spacing: 0.01em; padding: 0.4em 0.65em; }
+
+/* Título de seção dentro dos cards */
+.secao-titulo-card {
+  color: var(--red-dark);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+/* Cartões de resumo (contadores) com respiro */
+.resumo-card-icone { font-size: 1.6rem; margin-bottom: 2px; }
