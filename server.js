@@ -29,10 +29,10 @@ if (!BREVO_API_KEY) console.warn('⚠ BREVO_API_KEY não configurada — e-mails
 async function getDestinatarios(papeis) {
   if (MODO_TESTE) return [EMAIL_TESTE]
   if (papeis && papeis.length) {
-    const [rows] = await pool.query('SELECT email FROM usuarios WHERE papel IN (?)', [papeis])
+    const [rows] = await pool.query('SELECT email FROM usuarios WHERE papel IN (?) AND recebe_email = 1', [papeis])
     return rows.map((r) => r.email)
   }
-  const [rows] = await pool.query('SELECT email FROM usuarios')
+  const [rows] = await pool.query('SELECT email FROM usuarios WHERE recebe_email = 1')
   return rows.map((r) => r.email)
 }
 
