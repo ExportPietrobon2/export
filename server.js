@@ -333,21 +333,31 @@ app.patch('/api/produtos/:produtoId/insumos', autenticar(['admin', 'almoxarifado
   )
 
   if (produtoInfo[0]) {
-    const { numero_pi, cliente, produto } = produtoInfo[0]
+    const { pi_id, numero_pi, cliente } = produtoInfo[0]
 
     const semEtiqueta = todosInsumos.filter((i) => i.tipo !== 'etiqueta')
-    const tudo = semEtiqueta.length > 0 && semEtiqueta.every((i) => i.confirmado)
+    const produtoLiberado = semEtiqueta.length > 0 && semEtiqueta.every((i) => i.confirmado)
 
-    if (tudo && !eraLiberado) {
+    const [outros] = await pool.query(
+      `SELECT SUM(CASE WHEN ip.tipo <> 'etiqueta' AND ip.confirmado = 0 THEN 1 ELSE 0 END) as pendentes
+       FROM produtos_pi pp JOIN insumos_produto ip ON ip.produto_id = pp.id
+       WHERE pp.pi_id = ? AND pp.id <> ?
+       GROUP BY pp.id`,
+      [pi_id, req.params.produtoId]
+    )
+    const outrosLiberados = outros.every((o) => Number(o.pendentes) === 0)
+    const piEraLiberada = outrosLiberados && eraLiberado
+    const piEstaLiberada = outrosLiberados && produtoLiberado
+
+    if (piEstaLiberada && !piEraLiberada) {
       enviarEmail(
-        `✅ PI Liberada — ${numero_pi}`,
+        `PI Liberada para Produção — ${numero_pi}`,
         `<h2 style="color:#2E7D32;margin:0 0 16px">✅ PI Liberada para Produção</h2>
          <table style="width:100%;border-collapse:collapse;">
            <tr><td style="padding:8px 0;color:#8a6a6a;width:140px">PI</td><td style="padding:8px 0;font-weight:600">${numero_pi}</td></tr>
            <tr><td style="padding:8px 0;color:#8a6a6a">Cliente</td><td style="padding:8px 0;font-weight:600">${cliente || '—'}</td></tr>
-           <tr><td style="padding:8px 0;color:#8a6a6a">Produto</td><td style="padding:8px 0;font-weight:600">${produto}</td></tr>
          </table>
-         <p style="margin:16px 0 0;color:#2E7D32;font-weight:600">Todos os insumos estão disponíveis para produção.</p>`,
+         <p style="margin:16px 0 0;color:#2E7D32;font-weight:600">Todos os produtos desta PI estão com os insumos disponíveis para produção.</p>`,
         ['admin', 'gerente_producao', 'almoxarifado']
       )
     }
@@ -408,31 +418,6 @@ app.patch('/api/recebimentos/:id', autenticar(['admin', 'deposito']), upload.fie
     'UPDATE recebimentos_b2 SET status_recebimento = ?, recebido_em = NOW(), quantidade_recebida = ?, foto_url = ?, foto_nota_url = ? WHERE id = ?',
     ['recebido', quantidade_recebida || null, fotoProdutoUrl, fotoNotaUrl, req.params.id]
   )
-
-  const [rec] = await pool.query(`
-    SELECT r.tipo, r.quantidade_recebida, p.numero_pi, p.cliente, pr.produto
-    FROM recebimentos_b2 r
-    JOIN pedidos p ON p.id = r.pi_id
-    LEFT JOIN produtos_pi pr ON pr.id = r.produto_id
-    WHERE r.id = ?
-  `, [req.params.id])
-
-  if (rec[0]) {
-    const { tipo, quantidade_recebida: qtd, numero_pi, cliente, produto } = rec[0]
-    const tipoLabel = { embalagem: 'Embalagem', rotulo: 'Rótulo', caixa: 'Caixa' }[tipo] || tipo
-    enviarEmail(
-      `📦 Recebimento confirmado — PI ${numero_pi}`,
-      `<h2 style="color:#2E7D32;margin:0 0 16px">✅ Recebimento Confirmado</h2>
-       <table style="width:100%;border-collapse:collapse;">
-         <tr><td style="padding:8px 0;color:#8a6a6a;width:140px">PI</td><td style="padding:8px 0;font-weight:600">${numero_pi}</td></tr>
-         <tr><td style="padding:8px 0;color:#8a6a6a">Cliente</td><td style="padding:8px 0;font-weight:600">${cliente || '—'}</td></tr>
-         ${produto ? `<tr><td style="padding:8px 0;color:#8a6a6a">Produto</td><td style="padding:8px 0;font-weight:600">${produto}</td></tr>` : ''}
-         <tr><td style="padding:8px 0;color:#8a6a6a">Insumo</td><td style="padding:8px 0;font-weight:600">${tipoLabel}</td></tr>
-         ${qtd ? `<tr><td style="padding:8px 0;color:#8a6a6a">Quantidade</td><td style="padding:8px 0;font-weight:600">${qtd}</td></tr>` : ''}
-       </table>`,
-      ['admin', 'almoxarifado']
-    )
-  }
 
   res.json({ ok: true })
 })
@@ -711,9 +696,12 @@ async function verificarAlertasDeclaracao() {
       </tr>`
     }).join('')
 
+    const maxHoras = Math.max(...rows.map((r) => Math.floor((Date.now() - new Date(r.criado_em).getTime()) / 3600000)))
+    const urgente = maxHoras >= 96
+
     enviarEmail(
-      `⏰ ALERTA: ${rows.length} produto(s) sem estoque declarado há mais de 48h`,
-      `<h2 style="color:#E65100;margin:0 0 16px">⏰ Estoque não declarado pelo Almoxarifado</h2>
+      `${urgente ? '🔴 URGENTE — ' : ''}${rows.length} produto(s) sem estoque declarado (Almoxarifado)`,
+      `<h2 style="color:#E65100;margin:0 0 16px">${urgente ? '🔴 URGENTE — ' : ''}Estoque não declarado pelo Almoxarifado</h2>
        <p style="margin:0 0 12px;color:#8a6a6a">Os produtos abaixo foram cadastrados há mais de 48h e ainda não tiveram o informe de estoque salvo no almoxarifado:</p>
        <table style="width:100%;border-collapse:collapse;">
          <thead><tr>
@@ -738,6 +726,23 @@ setInterval(verificarAlertasDeclaracao, 24 * 60 * 60 * 1000)
 app.get('/api/alertas/declaracao', autenticar(TODOS), async (req, res) => {
   const [rows] = await pool.query(SQL_DECLARACAO_PENDENTE)
   res.json(rows)
+})
+
+app.get('/api/pendencias', autenticar(TODOS), async (req, res) => {
+  try {
+    const [decl] = await pool.query(SQL_DECLARACAO_PENDENTE)
+    const [emb] = await pool.query(SQL_EMBARQUES_PENDENTES)
+    const [[ped]] = await pool.query(`SELECT COUNT(*) as n FROM demandas WHERE status = 'pendente'`)
+    const [[atr]] = await pool.query(`SELECT COUNT(*) as n FROM compras WHERE status <> 'recebido' AND data_prevista IS NOT NULL AND data_prevista < CURDATE()`)
+    res.json({
+      estoqueNaoDeclarado: decl.length,
+      embarquesPendentes: emb.length,
+      pedidosCompra: ped.n,
+      comprasAtrasadas: atr.n
+    })
+  } catch (e) {
+    res.json({ estoqueNaoDeclarado: 0, embarquesPendentes: 0, pedidosCompra: 0, comprasAtrasadas: 0 })
+  }
 })
 
 // =============================================
@@ -890,6 +895,47 @@ async function verificarComprasAtrasadas() {
 
 setTimeout(verificarComprasAtrasadas, 120 * 1000)
 setInterval(verificarComprasAtrasadas, 24 * 60 * 60 * 1000)
+
+const SQL_EMBARQUES_PENDENTES = `
+  SELECT p.id, p.numero_pi, p.cliente
+  FROM pedidos p
+  WHERE p.concluida = 0 AND p.data_embarque IS NULL
+    AND EXISTS (SELECT 1 FROM produtos_pi pp WHERE pp.pi_id = p.id)
+    AND NOT EXISTS (
+      SELECT 1 FROM produtos_pi pp JOIN insumos_produto ip ON ip.produto_id = pp.id
+      WHERE pp.pi_id = p.id AND ip.tipo <> 'etiqueta' AND ip.confirmado = 0
+    )
+  ORDER BY p.numero_pi ASC`
+
+async function verificarEmbarquesPendentes() {
+  try {
+    const [rows] = await pool.query(SQL_EMBARQUES_PENDENTES)
+    if (!rows.length) return
+    const linhas = rows.map((p) => `<tr>
+        <td style="padding:8px 10px;border-bottom:1px solid #f0d0d0;font-weight:700">PI ${p.numero_pi}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #f0d0d0">${p.cliente || '—'}</td>
+      </tr>`).join('')
+    enviarEmail(
+      `${rows.length} PI(s) pronta(s) aguardando data de embarque`,
+      `<h2 style="color:#1565C0;margin:0 0 16px">🚢 PIs prontas sem data de embarque</h2>
+       <p style="margin:0 0 12px;color:#8a6a6a">As PIs abaixo já estão liberadas para produção, mas ainda não têm data de embarque definida. Gerente: por favor, declare o embarque.</p>
+       <table style="width:100%;border-collapse:collapse;">
+         <thead><tr>
+           <th style="text-align:left;padding:8px 10px;border-bottom:2px solid #1565C0">PI</th>
+           <th style="text-align:left;padding:8px 10px;border-bottom:2px solid #1565C0">Cliente</th>
+         </tr></thead>
+         <tbody>${linhas}</tbody>
+       </table>`,
+      ['admin', 'gerente_producao']
+    )
+    console.log(`Aviso de embarques pendentes enviado: ${rows.length} PI(s)`)
+  } catch (e) {
+    console.error('Erro no aviso de embarques pendentes:', e.message)
+  }
+}
+
+setTimeout(verificarEmbarquesPendentes, 150 * 1000)
+setInterval(verificarEmbarquesPendentes, 24 * 60 * 60 * 1000)
 
 // =============================================
 // DEMANDAS DE COMPRA

@@ -1,4 +1,25 @@
 import { sair } from './auth.js'
+import { api } from './api.js'
+
+async function carregarBadgesPendencias() {
+  try {
+    const p = await api.pendencias()
+    if (!p || p.erro) return
+    const add = (href, n, cor) => {
+      if (!n) return
+      const link = document.querySelector(`#navMenu a[href="${href}"]`)
+      if (!link) return
+      const b = document.createElement('span')
+      b.className = `badge rounded-pill ${cor} ms-1`
+      b.style.fontSize = '0.68rem'
+      b.textContent = n
+      link.appendChild(b)
+    }
+    add('/HTML/almoxarifado.html', p.estoqueNaoDeclarado, 'bg-warning text-dark')
+    add('/HTML/embarques.html', p.embarquesPendentes, 'bg-light text-dark')
+    add('/HTML/compras.html', (p.pedidosCompra || 0) + (p.comprasAtrasadas || 0), 'bg-danger')
+  } catch (e) { /* silencioso */ }
+}
 
 export function montarCabecalho(papel) {
   const paginaAtual = document.body.dataset.pagina
@@ -61,6 +82,7 @@ export function montarCabecalho(papel) {
   `
   document.getElementById('cabecalho').appendChild(nav)
   document.getElementById('btn-sair').addEventListener('click', (e) => { e.preventDefault(); sair() })
+  carregarBadgesPendencias()
 
   let promptInstalacao = null
 

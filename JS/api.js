@@ -84,6 +84,8 @@ export const api = {
     declaracaoPendente: () => requisitar('GET', '/api/alertas/declaracao')
   },
 
+  pendencias: () => requisitar('GET', '/api/pendencias'),
+
   demandas: {
     listar: () => requisitar('GET', '/api/demandas'),
     criar: (dados) => requisitar('POST', '/api/demandas', dados),
