@@ -642,3 +642,49 @@ body { letter-spacing: 0.005em; }
 
 /* Cartões de resumo (contadores) com respiro */
 .resumo-card-icone { font-size: 1.6rem; margin-bottom: 2px; }
+
+/* =========================================================
+   COMPACTAÇÃO — layout mais enxuto e menos "pesado"
+   (aplicado por último para sobrepor os valores anteriores)
+   ========================================================= */
+
+/* Cabeçalho de página menor e mais discreto */
+.page-header { padding: 14px 16px; margin-bottom: 16px; gap: 12px; }
+.page-header-icon { width: 40px; height: 40px; font-size: 1.15rem; border-radius: 10px; }
+.page-titulo { font-size: 1.2rem; }
+.page-subtitulo { font-size: 0.8rem; }
+
+/* Cards com menos preenchimento e menos sombra */
+.card { box-shadow: 0 1px 4px rgba(120,20,20,0.06) !important; margin-bottom: 14px; }
+.card-body { padding: 16px !important; }
+
+/* Botão de envio verde: tamanho normal, não largura total gigante */
+.btn-ok-grande {
+  width: auto !important;
+  font-size: 0.92rem;
+  padding: 9px 22px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(46,125,50,0.22);
+}
+.btn-ok-grande:hover, .btn-ok-grande:active {
+  box-shadow: 0 3px 9px rgba(46,125,50,0.28);
+}
+
+/* Botões em geral um pouco mais compactos */
+.btn-pietrobon { padding: 8px 18px; }
+.btn { font-size: 0.9rem; }
+.btn-sm { font-size: 0.8rem; }
+
+/* Abas mais baixas */
+.nav-tabs .nav-link { padding: 8px 14px !important; font-size: 0.9rem; }
+
+/* Título de seção mais contido */
+.secao-titulo-card { margin-bottom: 12px; font-size: 0.9rem; }
+
+/* Espaçamento vertical padrão das páginas um pouco menor */
+.container.py-4 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+
+/* No celular, os botões de envio voltam a ocupar a largura para facilitar o toque */
+@media (max-width: 576px) {
+  .btn-ok-grande { width: 100% !important; padding: 12px; }
+}
