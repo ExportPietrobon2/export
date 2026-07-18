@@ -1107,13 +1107,17 @@ ${contexto || 'Sem dados carregados no momento.'}
     const data = await resp.json()
     if (data.error) {
       console.error('Erro Gemini:', data.error.message)
-      return res.json({ resposta: 'Não consegui responder agora. Tente novamente em instantes.' })
+      return res.json({ resposta: '[DEBUG Gemini] ' + (data.error.message || 'erro desconhecido') })
     }
-    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta.'
+    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!texto) {
+      console.error('Gemini sem texto:', JSON.stringify(data).slice(0, 500))
+      return res.json({ resposta: '[DEBUG] Resposta vazia. Motivo: ' + (data.candidates?.[0]?.finishReason || JSON.stringify(data).slice(0, 300)) })
+    }
     res.json({ resposta: texto })
   } catch (e) {
     console.error('Erro no /api/chat:', e.message)
-    res.json({ resposta: 'Não consegui responder agora. Tente novamente em instantes.' })
+    res.json({ resposta: '[DEBUG] Falha na chamada: ' + (e.message || e) })
   }
 })
 
