@@ -86,6 +86,8 @@ export const api = {
 
   pendencias: () => requisitar('GET', '/api/pendencias'),
 
+  chat: (mensagem, historico) => requisitar('POST', '/api/chat', { mensagem, historico }),
+
   demandas: {
     listar: () => requisitar('GET', '/api/demandas'),
     criar: (dados) => requisitar('POST', '/api/demandas', dados),

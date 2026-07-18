@@ -1,5 +1,6 @@
 import { sair } from './auth.js'
 import { api } from './api.js'
+import { iniciarChat } from './chat.js'
 
 async function carregarBadgesPendencias() {
   try {
@@ -83,6 +84,7 @@ export function montarCabecalho(papel) {
   document.getElementById('cabecalho').appendChild(nav)
   document.getElementById('btn-sair').addEventListener('click', (e) => { e.preventDefault(); sair() })
   carregarBadgesPendencias()
+  iniciarChat(papel)
 
   let promptInstalacao = null
 

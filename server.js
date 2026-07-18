@@ -1009,6 +1009,114 @@ app.delete('/api/demandas/:id', autenticar(['admin', 'almoxarifado']), async (re
   res.json({ ok: true })
 })
 
+// =============================================
+// ASSISTENTE DE IA (Gemini) — um por papel
+// =============================================
+
+const PAPEL_INSTRUCOES = {
+  admin: 'Você é o assistente geral do sistema "Pietrobon Controle de Insumos". Tem visão de todos os setores (almoxarifado, compras, aromas, produção/embarques e depósito B2). Ajude a entender pendências, cobrar prazos e resumir a situação.',
+  almoxarifado: 'Você é o assistente do ALMOXARIFADO. Sua função é ajudar a declarar o estoque de insumos por PI (item por item), acompanhar o que ainda falta declarar e criar pedidos ao setor de compras quando faltar material.',
+  compras: 'Você é o assistente do setor de COMPRAS (embalagens, caixas e rótulos). Ajude a acompanhar os pedidos do almoxarifado, os prazos de entrega das compras e o que está atrasado.',
+  compras_aromas: 'Você é o assistente do comprador de AROMAS. Ajude a acompanhar os pedidos de aroma feitos pelo almoxarifado e o andamento das compras de aromas.',
+  gerente_producao: 'Você é o assistente da PRODUÇÃO/EMBARQUES. Ajude a acompanhar as datas de embarque das PIs e as PIs que já estão prontas mas ainda sem data de embarque declarada.',
+  deposito: 'Você é o assistente do DEPÓSITO B2. Ajude a acompanhar recebimentos e lançamentos de entrada no estoque B2.',
+  convidado: 'Você é um assistente de consulta do sistema Pietrobon. Responda dúvidas gerais sobre os dados visíveis.'
+}
+
+async function montarContexto(papel) {
+  const partes = []
+  try {
+    if (['admin', 'almoxarifado'].includes(papel)) {
+      const [decl] = await pool.query(SQL_DECLARACAO_PENDENTE)
+      partes.push(`ESTOQUE AINDA NÃO DECLARADO PELO ALMOXARIFADO (${decl.length} produto(s)):\n` +
+        (decl.length ? decl.map((d) => `- PI ${d.numero_pi} (${d.cliente || 'sem cliente'}): ${d.produto}`).join('\n') : 'Nenhum pendente.'))
+    }
+    if (['admin', 'gerente_producao'].includes(papel)) {
+      const [emb] = await pool.query(SQL_EMBARQUES_PENDENTES)
+      partes.push(`PIs PRONTAS SEM DATA DE EMBARQUE (${emb.length}):\n` +
+        (emb.length ? emb.map((e) => `- PI ${e.numero_pi} (${e.cliente || 'sem cliente'})`).join('\n') : 'Nenhuma pendente.'))
+    }
+    if (['admin', 'compras', 'compras_aromas'].includes(papel)) {
+      let filtroCat = ''
+      if (papel === 'compras') filtroCat = " AND categoria = 'gerais'"
+      else if (papel === 'compras_aromas') filtroCat = " AND categoria = 'aromas'"
+      const [dem] = await pool.query(
+        `SELECT d.descricao, d.quantidade, d.unidade, d.categoria, d.status, p.numero_pi
+         FROM demandas d LEFT JOIN pedidos p ON p.id = d.pi_id
+         WHERE d.status = 'pendente'${filtroCat} ORDER BY d.criado_em DESC LIMIT 50`)
+      partes.push(`PEDIDOS AO COMPRAS PENDENTES (${dem.length}):\n` +
+        (dem.length ? dem.map((d) => `- [${d.categoria}] ${d.descricao}${d.quantidade > 0 ? ` (${d.quantidade} ${d.unidade || ''})` : ''}${d.numero_pi ? ` — PI ${d.numero_pi}` : ''}`).join('\n') : 'Nenhum pendente.'))
+
+      const [atr] = await pool.query(
+        `SELECT c.descricao, c.fornecedor, c.data_prevista, c.status, p.numero_pi
+         FROM compras c LEFT JOIN pedidos p ON p.id = c.pi_id
+         WHERE c.status <> 'recebido' AND c.data_prevista IS NOT NULL AND c.data_prevista < CURDATE()
+         ORDER BY c.data_prevista ASC LIMIT 50`)
+      partes.push(`COMPRAS ATRASADAS (${atr.length}):\n` +
+        (atr.length ? atr.map((c) => `- ${c.descricao}${c.fornecedor ? ` (${c.fornecedor})` : ''} — prevista para ${new Date(c.data_prevista).toLocaleDateString('pt-BR')}`).join('\n') : 'Nenhuma atrasada.'))
+    }
+  } catch (e) {
+    console.error('Erro ao montar contexto do chat:', e.message)
+  }
+  return partes.join('\n\n')
+}
+
+app.post('/api/chat', autenticar(TODOS), async (req, res) => {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      return res.json({ resposta: 'O assistente ainda não está configurado (falta a chave GEMINI_API_KEY no servidor).' })
+    }
+    const papel = req.usuario.papel
+    const nome = req.usuario.nome || 'usuário'
+    const mensagem = (req.body.mensagem || '').toString().slice(0, 2000)
+    const historico = Array.isArray(req.body.historico) ? req.body.historico.slice(-10) : []
+    if (!mensagem.trim()) return res.json({ resposta: 'Digite uma mensagem.' })
+
+    const instrucao = PAPEL_INSTRUCOES[papel] || PAPEL_INSTRUCOES.convidado
+    const contexto = await montarContexto(papel)
+    const hoje = new Date().toLocaleDateString('pt-BR')
+
+    const system = `${instrucao}
+
+Você está conversando com ${nome} (papel: ${papel}). Data de hoje: ${hoje}.
+Responda em português do Brasil, de forma curta, objetiva e prática. Use os DADOS ATUAIS abaixo para responder com números reais. Se a pergunta for sobre algo fora desses dados, responda com base no conhecimento geral do processo, deixando claro quando for uma estimativa. Nunca invente números que não estejam nos dados.
+
+===== DADOS ATUAIS DO SETOR =====
+${contexto || 'Sem dados carregados no momento.'}
+===================================`
+
+    const contents = [
+      ...historico
+        .filter((m) => m && m.texto)
+        .map((m) => ({ role: m.de === 'bot' ? 'model' : 'user', parts: [{ text: String(m.texto).slice(0, 2000) }] })),
+      { role: 'user', parts: [{ text: mensagem }] }
+    ]
+
+    const resp = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + process.env.GEMINI_API_KEY,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents,
+          generationConfig: { temperature: 0.4, maxOutputTokens: 800 }
+        })
+      }
+    )
+    const data = await resp.json()
+    if (data.error) {
+      console.error('Erro Gemini:', data.error.message)
+      return res.json({ resposta: 'Não consegui responder agora. Tente novamente em instantes.' })
+    }
+    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta.'
+    res.json({ resposta: texto })
+  } catch (e) {
+    console.error('Erro no /api/chat:', e.message)
+    res.json({ resposta: 'Não consegui responder agora. Tente novamente em instantes.' })
+  }
+})
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'))
 })
