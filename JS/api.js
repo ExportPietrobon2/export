@@ -18,9 +18,13 @@ async function requisitar(metodo, rota, corpo, formData) {
   try {
     const resposta = await fetch(BASE + rota, opcoes)
     if (resposta.status === 401) {
-      sessionStorage.removeItem('token')
-      window.location.href = '/index.html'
-      return null
+      // Sessão expirada. NÃO redirecionamos aqui para não apagar o que o
+      // usuário digitou. Avisamos uma vez e devolvemos erro, mantendo a tela.
+      if (!window._sessaoExpiradaAvisada) {
+        window._sessaoExpiradaAvisada = true
+        alert('Sua sessão expirou por segurança. Anote/tire um print do que você digitou, atualize a página (F5) e faça login novamente — o que está na tela NÃO foi perdido até você atualizar.')
+      }
+      return { erro: 'Sessão expirada. Atualize a página e faça login novamente.' }
     }
     if (!resposta.ok && resposta.status !== 400) {
       console.error(`Erro ${resposta.status} em ${metodo} ${rota}`)

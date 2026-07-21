@@ -269,7 +269,7 @@ async function salvarProduto(produtoId, quantidade) {
     quantidade
   })
 
-  if (resultado?.erro) { alert('Erro ao salvar.'); return }
+  if (resultado?.erro) { alert(resultado.erro || 'Erro ao salvar. Tente novamente.'); return }
 
   carregarAlertaDeclaracao()
 

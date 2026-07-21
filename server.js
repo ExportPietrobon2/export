@@ -116,7 +116,7 @@ app.post('/api/login', async (req, res) => {
   const usuario = rows[0]
   const senhaCorreta = await bcrypt.compare(senha, usuario.senha)
   if (!senhaCorreta) return res.status(401).json({ erro: 'E-mail ou senha incorretos.' })
-  const expiracao = usuario.papel === 'deposito' ? '30d' : '8h'
+  const expiracao = '30d'
   const token = jwt.sign(
     { id: usuario.id, nome: usuario.nome, papel: usuario.papel },
     JWT_SECRET,
