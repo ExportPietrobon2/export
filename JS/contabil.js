@@ -166,51 +166,117 @@ window.excluirNota = async function (id) {
   carregarDados()
 }
 
-// ---------- Exportar Excel (mesmo padrão da planilha) ----------
-function exportarExcel() {
-  const aoa = []
-  aoa.push([`FATURAMENTO NFe — ${anoAtual}`])
-  aoa.push([])
-  const header = COLS.map((c) => c.t)
+// ---------- Exportar Excel (cores/layout idênticos à planilha) ----------
+const COR_AZUL = 'FF000080'   // cabeçalho azul-marinho
+const COR_VERDE = 'FF99CC00'  // linhas de dados verde-limão
+const COR_TOTAL = 'FFD9E1F2'  // total (azul claro)
+const BORDA = {
+  top: { style: 'thin', color: { argb: 'FF808080' } },
+  left: { style: 'thin', color: { argb: 'FF808080' } },
+  bottom: { style: 'thin', color: { argb: 'FF808080' } },
+  right: { style: 'thin', color: { argb: 'FF808080' } }
+}
+function preencher(cell, argb) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb } } }
+
+async function exportarExcel() {
+  const wb = new ExcelJS.Workbook()
+  const ws = wb.addWorksheet(String(anoAtual), { views: [{ showGridLines: false }] })
+  const nc = COLS.length
+
+  // Título
+  ws.mergeCells(1, 1, 1, nc)
+  const tit = ws.getCell(1, 1)
+  tit.value = `FATURAMENTO NFe — ${anoAtual}`
+  tit.font = { bold: true, size: 15, color: { argb: COR_AZUL } }
+  tit.alignment = { horizontal: 'center' }
+
+  let r = 3
   for (let m = 1; m <= 12; m++) {
     const doMes = dados.filter((d) => d.mes === m)
     if (!doMes.length) continue
-    aoa.push([MESES[m - 1].toUpperCase()])
-    aoa.push(header)
-    doMes.forEach((d) => aoa.push(COLS.map((c) => {
-      if (c.tipo === 'date') return dBR(d[c.k])
-      if (c.tipo === 'num') return Number(d[c.k]) || 0
-      return d[c.k] == null ? '' : d[c.k]
-    })))
+
+    // Rótulo do mês (faixa azul)
+    ws.mergeCells(r, 1, r, nc)
+    const ml = ws.getCell(r, 1)
+    ml.value = MESES[m - 1].toUpperCase()
+    ml.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+    preencher(ml, COR_AZUL)
+    ml.alignment = { horizontal: 'left', indent: 1 }
+    r++
+
+    // Cabeçalho de colunas (azul + branco)
+    COLS.forEach((c, i) => {
+      const cell = ws.getCell(r, i + 1)
+      cell.value = c.t
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+      preencher(cell, COR_AZUL)
+      cell.border = BORDA
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+    })
+    r++
+
+    // Linhas de dados (verde + preto negrito)
+    doMes.forEach((d) => {
+      COLS.forEach((c, i) => {
+        const cell = ws.getCell(r, i + 1)
+        let v = d[c.k]
+        if (c.tipo === 'date') cell.value = dBR(v)
+        else if (c.tipo === 'num') { cell.value = Number(v) || 0; cell.numFmt = '#,##0.00' }
+        else cell.value = v == null ? '' : v
+        cell.font = { bold: true, color: { argb: 'FF000000' } }
+        preencher(cell, COR_VERDE)
+        cell.border = BORDA
+        cell.alignment = { horizontal: c.tipo === 'num' ? 'right' : 'left', vertical: 'middle' }
+      })
+      r++
+    })
+
+    // Total do mês
     const tv = doMes.reduce((s, d) => s + (Number(d.valor_nfe) || 0), 0)
     const tp = doMes.reduce((s, d) => s + (Number(d.peso) || 0), 0)
-    const linhaTot = new Array(COLS.length).fill('')
-    linhaTot[7] = 'TOTAL'; linhaTot[8] = tv; linhaTot[9] = tp
-    aoa.push(linhaTot)
-    aoa.push([])
+    for (let i = 1; i <= nc; i++) { const c = ws.getCell(r, i); preencher(c, COR_TOTAL); c.border = BORDA; c.font = { bold: true } }
+    ws.mergeCells(r, 1, r, 8)
+    const lt = ws.getCell(r, 1); lt.value = `TOTAL ${MESES[m - 1]}`; lt.alignment = { horizontal: 'right' }
+    const cv = ws.getCell(r, 9); cv.value = tv; cv.numFmt = '#,##0.00'; cv.alignment = { horizontal: 'right' }
+    const cp = ws.getCell(r, 10); cp.value = tp; cp.numFmt = '#,##0.00'; cp.alignment = { horizontal: 'right' }
+    r += 2
   }
-  // Resumo anual
+
+  // Relatório anual
   const totalValor = dados.reduce((s, d) => s + (Number(d.valor_nfe) || 0), 0)
   const totalPeso = dados.reduce((s, d) => s + (Number(d.peso) || 0), 0)
-  aoa.push([])
-  aoa.push(['RELATÓRIO ANUAL'])
-  aoa.push(['Valor Comercializado', totalValor])
-  aoa.push(['Kilos Produzidos', totalPeso])
-  aoa.push(['Total de Notas', dados.length])
-  aoa.push([])
-  aoa.push(['VENDAS POR MÊS'])
-  aoa.push(['Mês', 'Notas', 'Valor', 'Peso'])
+  ws.mergeCells(r, 1, r, 4)
+  const rh = ws.getCell(r, 1); rh.value = 'RELATÓRIO ANUAL'; rh.font = { bold: true, color: { argb: 'FFFFFFFF' } }; preencher(rh, COR_AZUL); r++
+  const linhasResumo = [['Valor Comercializado', totalValor], ['Kilos Produzidos', totalPeso], ['Total de Notas', dados.length]]
+  linhasResumo.forEach(([lbl, val]) => {
+    const a = ws.getCell(r, 1); a.value = lbl; a.font = { bold: true }; preencher(a, COR_VERDE); a.border = BORDA
+    const b = ws.getCell(r, 2); b.value = val; b.numFmt = '#,##0.00'; preencher(b, COR_VERDE); b.border = BORDA; b.alignment = { horizontal: 'right' }
+    r++
+  })
+  r++
+
+  ws.mergeCells(r, 1, r, 4)
+  const vh = ws.getCell(r, 1); vh.value = 'VENDAS POR MÊS'; vh.font = { bold: true, color: { argb: 'FFFFFFFF' } }; preencher(vh, COR_AZUL); r++
+  ;['Mês', 'Notas', 'Valor', 'Peso'].forEach((h, i) => { const c = ws.getCell(r, i + 1); c.value = h; c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; preencher(c, COR_AZUL); c.border = BORDA })
+  r++
   for (let m = 1; m <= 12; m++) {
     const doMes = dados.filter((d) => d.mes === m)
     if (!doMes.length) continue
-    aoa.push([MESES[m - 1], doMes.length, doMes.reduce((s, d) => s + (Number(d.valor_nfe) || 0), 0), doMes.reduce((s, d) => s + (Number(d.peso) || 0), 0)])
+    const vals = [MESES[m - 1], doMes.length, doMes.reduce((s, d) => s + (Number(d.valor_nfe) || 0), 0), doMes.reduce((s, d) => s + (Number(d.peso) || 0), 0)]
+    vals.forEach((v, i) => { const c = ws.getCell(r, i + 1); c.value = v; if (i >= 2) c.numFmt = '#,##0.00'; c.font = { bold: true }; preencher(c, COR_VERDE); c.border = BORDA; if (i >= 1) c.alignment = { horizontal: 'right' } })
+    r++
   }
 
-  const ws = XLSX.utils.aoa_to_sheet(aoa)
-  ws['!cols'] = COLS.map((c) => ({ wch: c.k === 'produto' || c.k === 'vendedor' ? 20 : 14 }))
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, String(anoAtual))
-  XLSX.writeFile(wb, `Faturamento_NFe_${anoAtual}.xlsx`)
+  // Larguras de coluna
+  const larguras = { data: 12, nf: 12, fatura: 12, num_due: 18, data_due: 12, num_conhecimento: 18, data_conhecimento: 13, tipo: 7, valor_nfe: 15, peso: 12, vendedor: 18, produto: 22, pais: 16 }
+  COLS.forEach((c, i) => { ws.getColumn(i + 1).width = larguras[c.k] || 14 })
+
+  const buf = await wb.xlsx.writeBuffer()
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = `Faturamento_NFe_${anoAtual}.xlsx`; a.click()
+  URL.revokeObjectURL(url)
 }
 
 function exportarPDF() { window.print() }
