@@ -718,3 +718,43 @@ body { letter-spacing: 0.005em; }
   body { background: #fff !important; }
   .container { max-width: 100% !important; }
 }
+
+/* =========================================================
+   ABAS MAIS LEGÍVEIS (alto contraste)
+   ========================================================= */
+.nav-tabs {
+  border-bottom: 2px solid var(--border) !important;
+  gap: 6px !important;
+}
+.nav-tabs .nav-link,
+.nav-tabs .nav-link:link {
+  color: #4a2b2b !important;              /* texto escuro e nítido */
+  font-weight: 700 !important;
+  background: #f6e9e9 !important;         /* pílula clara */
+  border: 1px solid var(--border) !important;
+  border-bottom: none !important;
+  border-radius: 10px 10px 0 0 !important;
+  padding: 10px 18px !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+.nav-tabs .nav-link:hover {
+  background: #f7d9d9 !important;
+  color: var(--red-dark) !important;
+}
+.nav-tabs .nav-link.active {
+  background: var(--red) !important;      /* aba ativa: vermelho sólido */
+  color: #fff !important;                 /* texto branco, bem legível */
+  border-color: var(--red) !important;
+  box-shadow: 0 2px 8px rgba(237,50,55,.30) !important;
+}
+
+/* Botões usados como abas (data-aba) também ficam legíveis */
+[data-aba], [data-aba-compra] {
+  color: #4a2b2b !important;
+  font-weight: 700 !important;
+}
+[data-aba].active, [data-aba-compra].active {
+  color: #fff !important;
+  background: var(--red) !important;
+}
