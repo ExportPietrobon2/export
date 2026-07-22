@@ -1061,3 +1061,15 @@ body[data-pagina="contabil.html"]    .page-header-icon:empty::before { content: 
   border-color: rgba(255,255,255,.18) !important;
 }
 .table thead tr { background: #E23A34; }
+
+/* ============================================================
+   CORREÇÃO — ícone do cabeçalho por página (seletor com espaço)
+   ============================================================ */
+body[data-pagina="admin.html"] .page-header-icon::before        { content: "📊"; }
+body[data-pagina="cadastro.html"] .page-header-icon::before     { content: "📋"; }
+body[data-pagina="almoxarifado.html"] .page-header-icon::before { content: "📦"; }
+body[data-pagina="recebimento.html"] .page-header-icon::before  { content: "🚚"; }
+body[data-pagina="referencia.html"] .page-header-icon::before   { content: "📐"; }
+body[data-pagina="embarques.html"] .page-header-icon::before    { content: "🚢"; }
+body[data-pagina="compras.html"] .page-header-icon::before      { content: "🛒"; }
+body[data-pagina="contabil.html"] .page-header-icon::before     { content: "💰"; }
