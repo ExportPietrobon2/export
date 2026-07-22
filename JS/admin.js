@@ -40,13 +40,13 @@ function renderAlmoxarifado(produtos) {
  const necessario = Number(produto.quantidade) || 0
  const suf = sobra >= necessario
  detalhes = `Sobra: ${sobra} cx · ${suf
- ? `<span class="texto-ok">Suficiente (+${sobra - necessario} cx)</span>`
- : `<span class="texto-erro">Faltam ${necessario - sobra} cx</span>`}`
+ ? `<span class="texto-ok">✔ Suficiente (+${sobra - necessario} cx)</span>`
+ : `<span class="texto-erro">✗ Faltam ${necessario - sobra} cx</span>`}`
  } else if (insumo.tipo === 'etiqueta') {
  const sobra = Number(insumo.sobra) || 0
  detalhes = sobra === 0
- ? '<span class="texto-erro">Sem estoque</span>'
- : sobra < 100 ? `<span class="texto-alerta">Baixo (${sobra} un)</span>`
+ ? '<span class="texto-erro">✗ Sem estoque</span>'
+ : sobra < 100 ? `<span class="texto-alerta">⚠ Baixo (${sobra} un)</span>`
  : `${sobra} unidades`
  } else {
  const sobra = Number(insumo.sobra) || 0
@@ -54,7 +54,7 @@ function renderAlmoxarifado(produtos) {
  detalhes = `Sobra: ${sobra} kg${pacotes > 0 ? ` · ${pacotes} pacotes` : ''}`
  }
  const nomeInsumo = insumo.tipo === 'rotulo' ? ('Rótulo' + (insumo.nome ? ' – ' + insumo.nome : '')) : (rotuloInsumo[insumo.tipo] || insumo.tipo)
- return `<tr><td>${nomeInsumo}</td><td>${insumo.confirmado ? '' : ''}</td><td>${detalhes}</td></tr>`
+ return `<tr><td>${nomeInsumo}</td><td>${insumo.confirmado ? '✔' : '✗'}</td><td>${detalhes}</td></tr>`
  }).join('')
 
  return `

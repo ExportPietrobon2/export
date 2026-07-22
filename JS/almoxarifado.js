@@ -30,10 +30,10 @@ function cardInsumoHtml(chave, insumo, produto) {
  let resultado = ''
  if (chave === 'caixa') {
  const suf = sobra >= necessario
- resultado = `<div class="saldo-valor ${suf ? 'saldo-positivo' : 'saldo-negativo'} resultado-${produto.id}-caixa">${suf ? `Suficiente (sobram ${sobra - necessario} cx)` : `Faltam ${necessario - sobra} cx`}</div>`
+ resultado = `<div class="saldo-valor ${suf ? 'saldo-positivo' : 'saldo-negativo'} resultado-${produto.id}-caixa">${suf ? `✔ Suficiente (sobram ${sobra - necessario} cx)` : `✗ Faltam ${necessario - sobra} cx`}</div>`
  } else if (chave === 'etiqueta') {
  const baixo = sobra > 0 && sobra < 100, sem = sobra === 0
- resultado = `<div class="saldo-valor ${sem ? 'saldo-negativo' : baixo ? 'saldo-alerta' : 'saldo-positivo'} resultado-${produto.id}-etiqueta">${sem ? 'Sem estoque' : baixo ? `Baixo (${sobra} un)` : `${sobra} unidades`}</div>`
+ resultado = `<div class="saldo-valor ${sem ? 'saldo-negativo' : baixo ? 'saldo-alerta' : 'saldo-positivo'} resultado-${produto.id}-etiqueta">${sem ? '✗ Sem estoque' : baixo ? `⚠ Baixo (${sobra} un)` : `${sobra} unidades`}</div>`
  } else {
  const pac = Number(insumo.quantidade_por_pacote) || 0
  resultado = pac > 0 ? `<div class="saldo-valor saldo-positivo">${pac} pacotes possíveis</div>` : ''
@@ -94,7 +94,7 @@ async function carregarPi(piId) {
  topo.className = 'linha-produto-topo d-flex'
  topo.innerHTML = `
  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 w-100"><div class="d-flex align-items-center gap-2 flex-wrap"><span class="fw-semibold">${produto.produto}</span><span class="badge bg-secondary">${formatarQuantidade(produto.quantidade)}</span><span class="indicador-status ${liberado ? 'indicador-ok' : 'indicador-nok'}" data-status="${produto.id}">
- ${liberado ? 'OK' : 'Pendente'}
+ ${liberado ? '✔ OK' : '✗ Pendente'}
  </span>
  ${seloPrazoDeclaracaoHtml(produto)}
  </div><button class="btn btn-sm btn-outline-danger btn-expandir-produto" data-id="${produto.id}">Editar ▾</button></div>
@@ -261,7 +261,7 @@ function atualizarResultado(input) {
  const suf = sobra >= necessario
  const el = containerConteudo.querySelector(`.resultado-${produtoId}-caixa`)
  if (el) {
- el.textContent = suf ? `Suficiente (sobram ${sobra - necessario} cx)` : `Faltam ${necessario - sobra} cx`
+ el.textContent = suf ? `✔ Suficiente (sobram ${sobra - necessario} cx)` : `✗ Faltam ${necessario - sobra} cx`
  el.className = `saldo-valor ${suf ? 'saldo-positivo' : 'saldo-negativo'} resultado-${produtoId}-caixa`
  }
  } else if (tipo === 'etiqueta') {
@@ -269,7 +269,7 @@ function atualizarResultado(input) {
  const sem = sobra === 0
  const el = containerConteudo.querySelector(`.resultado-${produtoId}-etiqueta`)
  if (el) {
- el.textContent = sem ? 'Sem estoque' : baixo ? `Baixo (${sobra} un)` : `${sobra} unidades`
+ el.textContent = sem ? '✗ Sem estoque' : baixo ? `⚠ Baixo (${sobra} un)` : `${sobra} unidades`
  el.className = `saldo-valor ${sem ? 'saldo-negativo' : baixo ? 'saldo-alerta' : 'saldo-positivo'} resultado-${produtoId}-etiqueta`
  }
  }
@@ -289,7 +289,7 @@ function atualizarIndicador(produtoId) {
  const liberado = calcularLiberado(insumosAtuais, rotulosAtuais, quantidade)
  const indicador = containerConteudo.querySelector(`[data-status="${produtoId}"]`)
  if (indicador) {
- indicador.textContent = liberado ? 'OK' : 'Pendente'
+ indicador.textContent = liberado ? '✔ OK' : '✗ Pendente'
  indicador.className = `indicador-status ${liberado ? 'indicador-ok' : 'indicador-nok'}`
  }
 }

@@ -2,8 +2,8 @@ import { api } from './api.js'
 
 const statusInfo = {
  pendente: { label: 'Pendente', cor: 'bg-warning text-dark' },
- tem: { label: 'Tem', cor: 'bg-success' },
- nao_tem: { label: 'Não tem', cor: 'bg-danger' }
+ tem: { label: '✔ Tem', cor: 'bg-success' },
+ nao_tem: { label: '✗ Não tem', cor: 'bg-danger' }
 }
 
 const categoriaInfo = {
