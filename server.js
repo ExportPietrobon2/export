@@ -36,6 +36,18 @@ async function getDestinatarios(papeis) {
  return rows.map((r) => r.email)
 }
 
+// Evita reenvio de cobranças diárias a cada reinício: só permite 1x por dia por chave
+async function podeEnviarHoje(chave) {
+ try {
+ await pool.query('CREATE TABLE IF NOT EXISTS notif_log (chave VARCHAR(60) PRIMARY KEY, ultima_data DATE)')
+ const [[r]] = await pool.query('SELECT ultima_data FROM notif_log WHERE chave = ?', [chave])
+ const hoje = new Date().toISOString().slice(0, 10)
+ if (r && r.ultima_data && new Date(r.ultima_data).toISOString().slice(0, 10) === hoje) return false
+ await pool.query('INSERT INTO notif_log (chave, ultima_data) VALUES (?, CURDATE()) ON DUPLICATE KEY UPDATE ultima_data = CURDATE()', [chave])
+ return true
+ } catch (e) { return true }
+}
+
 async function enviarEmail(assunto, corpo, papeis) {
  try {
  if (!BREVO_API_KEY) return
@@ -653,6 +665,7 @@ async function verificarAlertasDeclaracao() {
  try {
  const [rows] = await pool.query(SQL_DECLARACAO_PENDENTE)
  if (!rows.length) return
+ if (!(await podeEnviarHoje('declaracao_pendente'))) return
 
  const linhas = rows.map((r) => {
  const horas = Math.floor((Date.now() - new Date(r.criado_em).getTime()) / 3600000)
@@ -841,6 +854,7 @@ async function verificarEmbarquesPendentes() {
  try {
  const [rows] = await pool.query(SQL_EMBARQUES_PENDENTES)
  if (!rows.length) return
+ if (!(await podeEnviarHoje('embarques_pendentes'))) return
  const linhas = rows.map((p) => `<tr><td style="padding:8px 10px;border-bottom:1px solid #f0d0d0;font-weight:700">PI ${p.numero_pi}</td><td style="padding:8px 10px;border-bottom:1px solid #f0d0d0">${p.cliente || '—'}</td></tr>`).join('')
  enviarEmail(
  `${rows.length} PI(s) pronta(s) aguardando data de embarque`,
