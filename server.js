@@ -1507,6 +1507,75 @@ app.delete('/api/checklist/:id', autenticarChecklist(), async (req, res) => {
   res.json({ ok: true })
 })
 
+// =============================================
+// ORDEM DE PRODUÇÃO (por PI) — restrito ao financeiro (export2, export, joaoantonio)
+// =============================================
+async function inicializarOrdemProducao() {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS ordem_producao (
+      id INT AUTO_INCREMENT PRIMARY KEY, pi_id INT, pais VARCHAR(120), cliente_curto VARCHAR(200),
+      imp_nome VARCHAR(200), imp_endereco VARCHAR(400), imp_contato VARCHAR(160), imp_tel VARCHAR(80), imp_email VARCHAR(160),
+      porto_embarque VARCHAR(200), local_entrega VARCHAR(200), data_carregamento DATE, total_caixas VARCHAR(40),
+      formula TEXT, mix_produtos TEXT, rotulos TEXT, embalagem TEXT, rotulos_embalagem TEXT, caixa_info TEXT, observacoes TEXT,
+      criado_por VARCHAR(160), criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX(pi_id))`)
+    await pool.query(`CREATE TABLE IF NOT EXISTS ordem_producao_itens (
+      id INT AUTO_INCREMENT PRIMARY KEY, ordem_id INT NOT NULL, seq INT DEFAULT 0,
+      qtd VARCHAR(40), unidade VARCHAR(40), descricao VARCHAR(300), codigo VARCHAR(60), INDEX(ordem_id))`)
+  } catch (e) { console.error('Erro init ordem_producao:', e.message) }
+}
+setTimeout(inicializarOrdemProducao, 3000)
+
+const CAMPOS_OP = ['pi_id', 'pais', 'cliente_curto', 'imp_nome', 'imp_endereco', 'imp_contato', 'imp_tel', 'imp_email',
+  'porto_embarque', 'local_entrega', 'data_carregamento', 'total_caixas', 'formula', 'mix_produtos', 'rotulos',
+  'embalagem', 'rotulos_embalagem', 'caixa_info', 'observacoes']
+
+async function salvarOpItens(ordemId, itens) {
+  await pool.query('DELETE FROM ordem_producao_itens WHERE ordem_id = ?', [ordemId])
+  if (Array.isArray(itens)) {
+    for (let i = 0; i < itens.length; i++) {
+      const it = itens[i]
+      if (!it || (!it.descricao && !it.qtd && !it.codigo)) continue
+      await pool.query('INSERT INTO ordem_producao_itens (ordem_id, seq, qtd, unidade, descricao, codigo) VALUES (?,?,?,?,?,?)',
+        [ordemId, i + 1, it.qtd || null, it.unidade || null, it.descricao || null, it.codigo || null])
+    }
+  }
+}
+
+app.get('/api/ordemproducao', autenticarContabil(), async (req, res) => {
+  const [rows] = await pool.query(`
+    SELECT o.id, o.pais, o.cliente_curto, o.data_carregamento, o.criado_em, p.numero_pi, p.cliente
+    FROM ordem_producao o LEFT JOIN pedidos p ON p.id = o.pi_id ORDER BY o.id DESC LIMIT 300`)
+  res.json(rows)
+})
+app.get('/api/ordemproducao/:id', autenticarContabil(), async (req, res) => {
+  const [[cab]] = await pool.query(`SELECT o.*, p.numero_pi, p.cliente FROM ordem_producao o LEFT JOIN pedidos p ON p.id = o.pi_id WHERE o.id = ?`, [req.params.id])
+  if (!cab) return res.status(404).json({ erro: 'Não encontrado.' })
+  const [itens] = await pool.query('SELECT * FROM ordem_producao_itens WHERE ordem_id = ? ORDER BY seq, id', [req.params.id])
+  res.json({ ...cab, itens })
+})
+app.post('/api/ordemproducao', autenticarContabil(), async (req, res) => {
+  const b = req.body
+  const vals = CAMPOS_OP.map((c) => (b[c] === '' || b[c] === undefined) ? null : b[c])
+  vals.push(req.usuario.nome || null)
+  const [r] = await pool.query(`INSERT INTO ordem_producao (${CAMPOS_OP.join(', ')}, criado_por) VALUES (${CAMPOS_OP.map(() => '?').join(', ')}, ?)`, vals)
+  await salvarOpItens(r.insertId, b.itens)
+  res.json({ id: r.insertId })
+})
+app.put('/api/ordemproducao/:id', autenticarContabil(), async (req, res) => {
+  const b = req.body
+  const sets = CAMPOS_OP.map((c) => `${c} = ?`)
+  const vals = CAMPOS_OP.map((c) => (b[c] === '' || b[c] === undefined) ? null : b[c])
+  vals.push(req.params.id)
+  await pool.query(`UPDATE ordem_producao SET ${sets.join(', ')} WHERE id = ?`, vals)
+  await salvarOpItens(req.params.id, b.itens)
+  res.json({ ok: true })
+})
+app.delete('/api/ordemproducao/:id', autenticarContabil(), async (req, res) => {
+  await pool.query('DELETE FROM ordem_producao_itens WHERE ordem_id = ?', [req.params.id])
+  await pool.query('DELETE FROM ordem_producao WHERE id = ?', [req.params.id])
+  res.json({ ok: true })
+})
+
 app.get('*', (req, res) => {
  res.sendFile(path.join(__dirname, 'index.html'))
 })

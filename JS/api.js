@@ -130,6 +130,14 @@ export const api = {
  excluirContrato: (id) => requisitar('DELETE', `/api/fin/contratos/${id}`)
  },
 
+ ordemProducao: {
+ listar: () => requisitar('GET', '/api/ordemproducao'),
+ obter: (id) => requisitar('GET', `/api/ordemproducao/${id}`),
+ criar: (dados) => requisitar('POST', '/api/ordemproducao', dados),
+ editar: (id, dados) => requisitar('PUT', `/api/ordemproducao/${id}`, dados),
+ excluir: (id) => requisitar('DELETE', `/api/ordemproducao/${id}`)
+ },
+
  checklist: {
  listar: () => requisitar('GET', '/api/checklist'),
  obter: (id) => requisitar('GET', `/api/checklist/${id}`),

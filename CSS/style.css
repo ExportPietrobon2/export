@@ -1086,3 +1086,7 @@ body[data-pagina="financeiro.html"] .page-header-icon::before { content: "🏦";
 /* Ícone da aba Check-list de Expedição */
 body[data-pagina="checklist.html"] .page-header-icon::before { content: "📋"; }
 #menu-principal a[href$="checklist.html"]::before { content: "📋"; margin-right: 8px; }
+
+/* Ícone da aba Ordem de Produção */
+body[data-pagina="ordem-producao.html"] .page-header-icon::before { content: "🏭"; }
+#menu-principal a[href$="ordem-producao.html"]::before { content: "🏭"; margin-right: 8px; }

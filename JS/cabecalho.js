@@ -47,7 +47,7 @@ export function montarCabecalho(papel) {
  <li><a class="dropdown-item ${link.href.endsWith(paginaAtual) ? 'active' : ''}" href="${link.href}">${link.texto}</a></li>`).join('')
 
  const itemContabil = ehContabil ? `
- <li><hr class="dropdown-divider"></li><li><a class="dropdown-item item-contabil ${'/HTML/contabil.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/contabil.html">Contábil / Faturamento</a></li><li><a class="dropdown-item item-contabil ${'/HTML/exp-contabil.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/exp-contabil.html">Contab. de Exportação</a></li><li><a class="dropdown-item item-contabil ${'/HTML/financeiro.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/financeiro.html">Financeiro (Importações)</a></li>` : ''
+ <li><hr class="dropdown-divider"></li><li><a class="dropdown-item item-contabil ${'/HTML/contabil.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/contabil.html">Contábil / Faturamento</a></li><li><a class="dropdown-item item-contabil ${'/HTML/exp-contabil.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/exp-contabil.html">Contab. de Exportação</a></li><li><a class="dropdown-item item-contabil ${'/HTML/financeiro.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/financeiro.html">Financeiro (Importações)</a></li><li><a class="dropdown-item item-contabil ${'/HTML/ordem-producao.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/ordem-producao.html">Ordem de Produção</a></li>` : ''
 
  const itemChecklist = ehChecklist ? `
  <li><a class="dropdown-item item-contabil ${'/HTML/checklist.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/checklist.html">Check-list de Expedição</a></li>` : ''
