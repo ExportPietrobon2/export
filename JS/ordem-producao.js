@@ -252,13 +252,37 @@ function exportarPDF(d) {
     <div style="text-align:center;font-size:9.5px;color:#666;margin-top:6px">Tapejara - RS, Brasil</div>
   </div>`
 
-  let area = document.getElementById('area-impressao')
-  if (!area) { area = document.createElement('div'); area.id = 'area-impressao'; area.style.display = 'none'; document.body.appendChild(area) }
-  area.innerHTML = html
-  document.body.classList.add('imprimindo')
-  const limpar = () => { document.body.classList.remove('imprimindo'); window.removeEventListener('afterprint', limpar) }
-  window.addEventListener('afterprint', limpar)
-  window.print()
+  gerarPdfDeHtml(html, `Ordem_Producao_PI_${(d.numero_pi || '').replace(/\W+/g, '_')}.pdf`)
+}
+
+// Gera um PDF real a partir do HTML (captura fiel, sem depender da janela de impressão)
+async function gerarPdfDeHtml(html, nomeArquivo) {
+  const cont = document.createElement('div')
+  cont.style.cssText = 'position:fixed;left:-10000px;top:0;width:780px;background:#fff;padding:24px'
+  cont.innerHTML = html
+  document.body.appendChild(cont)
+  try {
+    const canvas = await html2canvas(cont, { scale: 2, backgroundColor: '#ffffff', useCORS: true })
+    const { jsPDF } = window.jspdf
+    const pdf = new jsPDF('p', 'mm', 'a4')
+    const pageW = 210, pageH = 297
+    const imgW = pageW, imgH = canvas.height * imgW / canvas.width
+    let heightLeft = imgH, position = 0
+    const img = canvas.toDataURL('image/jpeg', 0.92)
+    pdf.addImage(img, 'JPEG', 0, position, imgW, imgH)
+    heightLeft -= pageH
+    while (heightLeft > 0) {
+      position -= pageH
+      pdf.addPage()
+      pdf.addImage(img, 'JPEG', 0, position, imgW, imgH)
+      heightLeft -= pageH
+    }
+    pdf.save(nomeArquivo)
+  } catch (e) {
+    alert('Erro ao gerar PDF: ' + e.message)
+  } finally {
+    document.body.removeChild(cont)
+  }
 }
 
 // ---------- Excel ----------
