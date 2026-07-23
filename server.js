@@ -1125,8 +1125,15 @@ const NOMES_MESES_EC = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', '
 
 // Cria as tabelas e importa os dados de Junho/2026 automaticamente (uma vez)
 async function inicializarContabExportacao() {
+  let ecSeed
   try {
-    const ecSeed = require('./ec_seed')
+    ecSeed = require('./ec_seed')
+  } catch (e) {
+    // O arquivo ec_seed.js é usado só na 1ª importação. Depois pode ser
+    // removido do projeto — as tabelas e os dados já existem no banco.
+    return
+  }
+  try {
     for (const stmt of ecSeed.schema) await pool.query(stmt)
     const [[c]] = await pool.query('SELECT COUNT(*) AS n FROM ec_clientes')
     if (c.n === 0) {
