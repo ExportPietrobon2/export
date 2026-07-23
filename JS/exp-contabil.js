@@ -210,23 +210,30 @@ window.toggleEnt = async function (id, tipo) {
 async function exportarExcel() {
   if (!saldoCache) return
   const cfg = MODULOS[modulo]
-  const AZUL = 'FF000080', VERDE = 'FF99CC00', BORDA = { style: 'thin', color: { argb: 'FF808080' } }
+  // Paleta em tons de cinza — legível ao imprimir em preto e branco
+  const CAB = 'FF404040'        // cabeçalho: cinza escuro (texto branco)
+  const LINHA_A = 'FFFFFFFF'     // linha par: branco
+  const LINHA_B = 'FFF2F2F2'     // linha ímpar: cinza bem claro (zebra)
+  const TOTAL = 'FFC9C9C9'       // total: cinza médio
+  const PRETO = 'FF000000'
+  const BORDA = { style: 'thin', color: { argb: PRETO } }
   const b = { top: BORDA, left: BORDA, bottom: BORDA, right: BORDA }
   const wb = new ExcelJS.Workbook()
   const ws = wb.addWorksheet('Contab', { views: [{ showGridLines: false }] })
   ws.mergeCells(1, 1, 1, 5)
-  const t = ws.getCell(1, 1); t.value = `${cfg.titulo.toUpperCase()} — ${saldoCache.mes.nome}`; t.font = { bold: true, size: 14, color: { argb: AZUL } }; t.alignment = { horizontal: 'center' }
+  const t = ws.getCell(1, 1); t.value = `${cfg.titulo.toUpperCase()} — ${saldoCache.mes.nome}`; t.font = { bold: true, size: 14, color: { argb: PRETO } }; t.alignment = { horizontal: 'center' }
   const head = ['Entidade', 'Saldo anterior', cfg.colA, cfg.colD, 'Saldo atual']
-  head.forEach((h, i) => { const c = ws.getCell(3, i + 1); c.value = h; c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } }; c.border = b; c.alignment = { horizontal: 'center' } })
+  head.forEach((h, i) => { const c = ws.getCell(3, i + 1); c.value = h; c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CAB } }; c.border = b; c.alignment = { horizontal: 'center' } })
   let r = 4
   const tot = { ant: 0, au: 0, di: 0, at: 0 }
-  saldoCache.linhas.forEach((l) => {
+  saldoCache.linhas.forEach((l, idx) => {
+    const cor = idx % 2 === 0 ? LINHA_A : LINHA_B
     const vals = [l.nome, l.anterior, l.aumenta, l.diminui, l.atual]
-    vals.forEach((v, i) => { const c = ws.getCell(r, i + 1); c.value = v; if (i > 0) c.numFmt = '#,##0.00'; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE } }; c.border = b; c.font = { bold: true }; if (i > 0) c.alignment = { horizontal: 'right' } })
+    vals.forEach((v, i) => { const c = ws.getCell(r, i + 1); c.value = v; if (i > 0) c.numFmt = '#,##0.00'; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: cor } }; c.border = b; c.font = { color: { argb: PRETO } }; if (i > 0) c.alignment = { horizontal: 'right' } })
     tot.ant += l.anterior; tot.au += l.aumenta; tot.di += l.diminui; tot.at += l.atual; r++
   })
   const totv = ['TOTAL', tot.ant, tot.au, tot.di, tot.at]
-  totv.forEach((v, i) => { const c = ws.getCell(r, i + 1); c.value = v; if (i > 0) { c.numFmt = '#,##0.00'; c.alignment = { horizontal: 'right' } } c.font = { bold: true }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }; c.border = b })
+  totv.forEach((v, i) => { const c = ws.getCell(r, i + 1); c.value = v; if (i > 0) { c.numFmt = '#,##0.00'; c.alignment = { horizontal: 'right' } } c.font = { bold: true, color: { argb: PRETO } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TOTAL } }; c.border = b })
   ws.columns = [{ width: 42 }, { width: 16 }, { width: 16 }, { width: 16 }, { width: 16 }]
   const buf = await wb.xlsx.writeBuffer()
   const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
@@ -241,7 +248,7 @@ function montarInterface() {
     <div class="card mb-3 no-print"><div class="card-body">
       <div class="d-flex flex-wrap align-items-end gap-2">
         <div><label class="form-label small mb-0 fw-semibold">Período</label><br>
-          <select id="sel-mes" class="form-select form-select-sm d-inline-block" style="width:auto"></select></div>
+          <select id="sel-mes" class="form-select form-select-sm d-inline-block" style="width:150px;padding-right:30px"></select></div>
         <button class="btn btn-sm btn-outline-secondary" id="btn-novo-mes">+ Novo mês</button>
         <button class="btn btn-sm btn-outline-danger" id="btn-excluir-mes">Excluir mês</button>
         <div class="ms-auto"><button class="btn btn-sm btn-pietrobon" id="btn-cadastros">Cadastros (clientes/fornecedores)</button></div>
