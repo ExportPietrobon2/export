@@ -172,58 +172,84 @@ async function salvar() {
 // ---------- PDF ----------
 function exportarPDF(d) {
   const itens = d.itens || []
-  const lbl = 'border:1px solid #000;padding:4px 7px;font-size:10px;font-weight:bold;background:#f0f0f0;width:170px'
-  const val = 'border:1px solid #000;padding:4px 7px;font-size:10px'
-  const th = 'border:1px solid #000;padding:4px 6px;font-size:9.5px;font-weight:bold;background:#e6e6e6;text-align:center'
-  const td = (al) => `border:1px solid #000;padding:4px 6px;font-size:9.5px;text-align:${al}`
-  const secao = (t) => `<div style="background:#333;color:#fff;font-weight:bold;font-size:11px;padding:4px 8px;margin-top:10px">${esc(t)}</div>`
-  const bloco = (t, txt) => txt ? `${secao(t)}<div style="border:1px solid #000;border-top:none;padding:6px 8px;font-size:10px;line-height:1.5">${nl(txt)}</div>` : ''
+  const NAVY = '#1f2d50', RED = '#c0392b', LBL = '#eef1f5', BORD = '#d5dae2'
+  const secao = (t) => `<div style="background:${NAVY};color:#fff;font-weight:bold;font-size:11px;padding:7px 12px;margin-top:12px">${esc(t)}</div>`
+  const lbl = `border:1px solid ${BORD};padding:8px 12px;font-size:10.5px;font-weight:bold;background:${LBL};width:210px;color:#1f2d50`
+  const val = `border:1px solid ${BORD};padding:8px 12px;font-size:10.5px`
+  const th = `border:1px solid ${NAVY};padding:6px 8px;font-size:10px;font-weight:bold;background:${NAVY};color:#fff;text-align:center`
+  const td = (al) => `border:1px solid ${BORD};padding:6px 8px;font-size:10px;text-align:${al}`
+  const linhaLV = (l, v, corVal) => `<tr><td style="${lbl}">${esc(l)}</td><td style="${val}${corVal ? ';color:' + corVal + ';font-weight:bold' : ''}">${esc(v || '')}</td></tr>`
+  const blocoTexto = (t, txt) => txt ? `${secao(t)}<div style="border:1px solid ${BORD};border-top:none;padding:8px 12px;font-size:10.5px;line-height:1.55">${nl(txt)}</div>` : ''
 
-  const html = `<div style="font-family:Arial,sans-serif;color:#000">
-    <div style="text-align:center;border:1px solid #000;padding:8px">
-      <div style="font-weight:bold;font-size:13px">PIETROBON &amp; CIA. LTDA.</div>
-      <div style="font-size:15px;font-weight:bold;letter-spacing:1px">ORDEM DE PRODUÇÃO</div>
-      <div style="font-size:12px;font-weight:bold">PI ${esc(d.numero_pi || '')} &nbsp;•&nbsp; ${esc(d.pais || '')} &nbsp;•&nbsp; ${esc(d.cliente_curto || '')}</div>
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#1a1a1a">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid ${NAVY};padding-bottom:8px">
+      <div>
+        <div style="font-weight:bold;font-size:13px;color:#1a1a1a">PIETROBON &amp; CIA. LTDA.</div>
+        <div style="font-weight:bold;font-size:14px;color:#1a1a1a">ORDEM DE PRODUÇÃO</div>
+        <div style="font-size:11px;color:#333">PI ${esc(d.numero_pi || '')} • ${esc(d.pais || '')} • ${esc(d.cliente_curto || '')}</div>
+      </div>
+      <div style="font-weight:bold;font-size:15px;color:${RED}">Pietrobon</div>
     </div>
+
     ${secao('DADOS DO IMPORTADOR')}
-    <table style="width:100%;border-collapse:collapse;border-top:none">
-      <tr><td style="${lbl}">Importador</td><td style="${val}">${esc(d.imp_nome || '')}</td></tr>
-      <tr><td style="${lbl}">Endereço</td><td style="${val}">${esc(d.imp_endereco || '')}</td></tr>
-      <tr><td style="${lbl}">Contato</td><td style="${val}">${esc(d.imp_contato || '')}</td></tr>
-      <tr><td style="${lbl}">Tel</td><td style="${val}">${esc(d.imp_tel || '')}</td></tr>
-      <tr><td style="${lbl}">E-mail</td><td style="${val}">${esc(d.imp_email || '')}</td></tr>
+    <table style="width:100%;border-collapse:collapse">
+      ${linhaLV('Importador', d.imp_nome)}${linhaLV('Endereço', d.imp_endereco)}${linhaLV('Contato', d.imp_contato)}${linhaLV('Tel', d.imp_tel)}${linhaLV('E-mail', d.imp_email)}
     </table>
+
     ${secao('DADOS DO PEDIDO')}
-    <table style="width:100%;border-collapse:collapse;border-top:none">
-      <tr><td style="${lbl}">Pedido / PI</td><td style="${val}">PI ${esc(d.numero_pi || '')}</td></tr>
-      <tr><td style="${lbl}">Importador</td><td style="${val}">${esc(d.cliente_curto || '')}</td></tr>
-      <tr><td style="${lbl}">Porto de Embarque</td><td style="${val}">${esc(d.porto_embarque || '')}</td></tr>
-      <tr><td style="${lbl}">Local de Entrega</td><td style="${val}">${esc(d.local_entrega || '')}</td></tr>
-      <tr><td style="${lbl}">Data de Carregamento</td><td style="${val}">${dBR(d.data_carregamento)}</td></tr>
-      <tr><td style="${lbl}">Total de Caixas</td><td style="${val}">${esc(d.total_caixas || '')}</td></tr>
+    <table style="width:100%;border-collapse:collapse">
+      ${linhaLV('Pedido / PI', 'PI ' + (d.numero_pi || ''))}${linhaLV('Importador', d.cliente_curto)}${linhaLV('Porto de Embarque', d.porto_embarque)}${linhaLV('Local de Entrega', d.local_entrega)}${linhaLV('Data de Carregamento', dBR(d.data_carregamento), RED)}${linhaLV('Total de Caixas', d.total_caixas)}
     </table>
+
     ${secao('ITENS DO PEDIDO')}
-    <table style="width:100%;border-collapse:collapse;border-top:none">
+    <table style="width:100%;border-collapse:collapse">
       <thead><tr><th style="${th}">Quantidade</th><th style="${th}">Item</th><th style="${th};text-align:left">Descrição do Produto</th><th style="${th}">Código</th></tr></thead>
       <tbody>${itens.map((it) => `<tr><td style="${td('center')}">${esc(it.qtd || '')}</td><td style="${td('center')}">${esc(it.unidade || '')}</td><td style="${td('left')}">${esc(it.descricao || '')}</td><td style="${td('center')}">${esc(it.codigo || '')}</td></tr>`).join('')}</tbody>
     </table>
-    ${bloco('PRODUTO — FÓRMULA', d.formula)}
-    ${bloco('MIX DE PRODUTOS', d.mix_produtos)}
-    ${bloco('RÓTULOS', d.rotulos)}
-    ${bloco('EMBALAGEM', d.embalagem)}
-    ${bloco('RÓTULOS / EMBALAGEM', d.rotulos_embalagem)}
-    ${bloco('CAIXA', d.caixa_info)}
-    ${bloco('OBSERVAÇÕES DA PRODUÇÃO', d.observacoes)}
+    <div style="font-weight:bold;font-size:10.5px;padding:6px 2px">Total: ${esc(d.total_caixas || itens.reduce((s, it) => s + (parseFloat(String(it.qtd || '').replace(/\./g, '').replace(',', '.')) || 0), 0).toLocaleString('pt-BR'))}</div>
+
+    ${d.formula ? `${secao('Produto - Fórmula')}<div style="background:${RED};color:#fff;font-weight:bold;text-align:center;padding:16px 18px;font-size:11px;line-height:1.7">${nl(d.formula)}</div>` : ''}
+    ${blocoTexto('Mix de Produtos', d.mix_produtos)}
+    ${blocoTexto('Rótulos', d.rotulos)}
+    ${blocoTexto('Embalagem', d.embalagem)}
+    ${blocoTexto('Rótulos / Embalagem', d.rotulos_embalagem)}
+    ${blocoTexto('Caixa', d.caixa_info)}
+    ${secao('OBSERVAÇÕES DA PRODUÇÃO')}<div style="border:1px solid ${BORD};border-top:none;padding:8px 12px;font-size:10.5px;line-height:1.55;min-height:60px">${nl(d.observacoes || '')}</div>
+
     ${secao('CONTROLE DE LOTE — Preencher lote, elaboração e vencimento durante a produção')}
-    <table style="width:100%;border-collapse:collapse;border-top:none">
+    <table style="width:100%;border-collapse:collapse">
       <thead><tr><th style="${th};text-align:left">Produto</th><th style="${th}">QTD (CX)</th><th style="${th}">Lote</th><th style="${th}">Elaboração</th><th style="${th}">Vence</th></tr></thead>
-      <tbody>${itens.map((it) => `<tr><td style="${td('left')}">${esc(it.descricao || '')}</td><td style="${td('center')}">${esc(it.qtd || '')}</td><td style="${td('center')};height:20px"></td><td style="${td('center')}"></td><td style="${td('center')}"></td></tr>`).join('')}</tbody>
+      <tbody>
+        ${itens.map((it) => `<tr><td style="${td('left')};height:34px">${esc(it.descricao || '')}</td><td style="${td('center')}">${esc(it.qtd || '')}</td><td style="${td('center')}"></td><td style="${td('center')}"></td><td style="${td('center')}"></td></tr>`).join('')}
+        <tr style="font-weight:bold;background:${LBL}"><td style="${td('left')}">TOTAL</td><td style="${td('center')}">${esc(d.total_caixas || '')}</td><td style="${td('center')}"></td><td style="${td('center')}"></td><td style="${td('center')}"></td></tr>
+      </tbody>
     </table>
+
     ${secao('RESPONSÁVEL PELA BALANÇA / QUALIDADE')}
-    <table style="width:100%;border-collapse:collapse;border-top:none">
-      <tr><th style="${th}">Turno</th><th style="${th}">Responsável pela Balança</th><th style="${th}">Qualidade</th></tr>
-      ${['1º Turno', '2º Turno', '3º Turno'].map((t) => `<tr><td style="${td('center')}">${t}</td><td style="${td('left')};height:22px"></td><td style="${td('left')}"></td></tr>`).join('')}
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+      <tr>
+        <td style="border:1px solid ${BORD};padding:0;vertical-align:top;width:50%">
+          <div style="background:${NAVY};color:#fff;font-weight:bold;font-size:10px;padding:5px 10px">RESPONSÁVEL PELA BALANÇA</div>
+          <table style="width:100%;border-collapse:collapse">${['1º Turno', '2º Turno', '3º Turno'].map((t) => `<tr><td style="${td('left')};width:80px;height:26px">${t}</td><td style="${td('left')}"></td></tr>`).join('')}</table>
+        </td>
+        <td style="border:1px solid ${BORD};padding:0;vertical-align:top;width:50%">
+          <div style="background:${NAVY};color:#fff;font-weight:bold;font-size:10px;padding:5px 10px">QUALIDADE</div>
+          <table style="width:100%;border-collapse:collapse">${['1º Turno', '2º Turno', '3º Turno'].map((t) => `<tr><td style="${td('left')};width:80px;height:26px">${t}</td><td style="${td('left')}"></td></tr>`).join('')}</table>
+        </td>
+      </tr>
     </table>
+
+    <table style="width:100%;border-collapse:collapse;margin-top:40px">
+      <tr>
+        <td style="width:50%;text-align:center;font-size:10.5px;padding:0 20px">
+          <div style="border-top:1px solid #000;padding-top:4px">Responsável pela Expedição</div>
+        </td>
+        <td style="width:50%;text-align:center;font-size:10.5px;padding:0 20px">
+          <div style="border-top:1px solid #000;padding-top:4px">Data: ____ / ____ / ______</div>
+        </td>
+      </tr>
+    </table>
+    <div style="text-align:center;font-size:9.5px;color:#666;margin-top:6px">Tapejara - RS, Brasil</div>
   </div>`
 
   let area = document.getElementById('area-impressao')
@@ -239,12 +265,12 @@ function exportarPDF(d) {
 async function exportarExcel(d) {
   const wb = new ExcelJS.Workbook()
   const ws = wb.addWorksheet('Ordem de Produção', { views: [{ showGridLines: false }] })
-  const CINZA = 'FF333333', CAB = 'FFE6E6E6'
+  const NAVY = 'FF1F2D50', RED = 'FFC0392B', CAB = 'FFEEF1F5'
   let r = 1
-  const titulo = (txt) => { ws.mergeCells(r, 1, r, 4); const c = ws.getCell(r, 1); c.value = txt; c.font = { bold: true, size: 12 }; c.alignment = { horizontal: 'center' }; r++ }
-  const secao = (txt) => { ws.mergeCells(r, 1, r, 4); const c = ws.getCell(r, 1); c.value = txt; c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CINZA } }; r++ }
-  const par = (l, v) => { const a = ws.getCell(r, 1); a.value = l; a.font = { bold: true }; const b = ws.getCell(r, 2); ws.mergeCells(r, 2, r, 4); b.value = v || ''; r++ }
-  const bloco = (t, txt) => { if (!txt) return; secao(t); ws.mergeCells(r, 1, r, 4); const c = ws.getCell(r, 1); c.value = txt; c.alignment = { wrapText: true, vertical: 'top' }; ws.getRow(r).height = Math.min(120, 15 + String(txt).split('\n').length * 12); r++ }
+  const titulo = (txt, sz) => { ws.mergeCells(r, 1, r, 4); const c = ws.getCell(r, 1); c.value = txt; c.font = { bold: true, size: sz || 12 }; c.alignment = { horizontal: 'center' }; r++ }
+  const secao = (txt) => { ws.mergeCells(r, 1, r, 4); const c = ws.getCell(r, 1); c.value = txt; c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } }; r++ }
+  const par = (l, v) => { const a = ws.getCell(r, 1); a.value = l; a.font = { bold: true }; a.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CAB } }; const b = ws.getCell(r, 2); ws.mergeCells(r, 2, r, 4); b.value = v || ''; r++ }
+  const bloco = (t, txt, red) => { if (!txt) return; secao(t); ws.mergeCells(r, 1, r, 4); const c = ws.getCell(r, 1); c.value = txt; c.alignment = { wrapText: true, vertical: 'top', horizontal: red ? 'center' : 'left' }; if (red) { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: RED } }; c.font = { bold: true, color: { argb: 'FFFFFFFF' } } } ws.getRow(r).height = Math.min(130, 16 + String(txt).split('\n').length * 12); r++ }
 
   titulo('PIETROBON & CIA. LTDA. — ORDEM DE PRODUÇÃO')
   titulo(`PI ${d.numero_pi || ''} • ${d.pais || ''} • ${d.cliente_curto || ''}`)
@@ -256,12 +282,17 @@ async function exportarExcel(d) {
   ;['Quantidade', 'Item', 'Descrição do Produto', 'Código'].forEach((h, i) => { const c = ws.getCell(r, i + 1); c.value = h; c.font = { bold: true }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CAB } } })
   r++
   ;(d.itens || []).forEach((it) => { ws.getCell(r, 1).value = it.qtd; ws.getCell(r, 2).value = it.unidade; ws.getCell(r, 3).value = it.descricao; ws.getCell(r, 4).value = it.codigo; r++ })
-  bloco('PRODUTO — FÓRMULA', d.formula); bloco('MIX DE PRODUTOS', d.mix_produtos); bloco('RÓTULOS', d.rotulos)
+  bloco('Produto - Fórmula', d.formula, true); bloco('MIX DE PRODUTOS', d.mix_produtos); bloco('RÓTULOS', d.rotulos)
   bloco('EMBALAGEM', d.embalagem); bloco('RÓTULOS / EMBALAGEM', d.rotulos_embalagem); bloco('CAIXA', d.caixa_info); bloco('OBSERVAÇÕES DA PRODUÇÃO', d.observacoes)
   secao('CONTROLE DE LOTE')
   ;['Produto', 'QTD (CX)', 'Lote', 'Elaboração', 'Vence'].forEach((h, i) => { const c = ws.getCell(r, i + 1); c.value = h; c.font = { bold: true }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CAB } } })
   r++
   ;(d.itens || []).forEach((it) => { ws.getCell(r, 1).value = it.descricao; ws.getCell(r, 2).value = it.qtd; r++ })
+  r += 2
+  secao('RESPONSÁVEL PELA EXPEDIÇÃO')
+  ws.getCell(r, 1).value = 'Assinatura:'; ws.getCell(r, 1).font = { bold: true }; ws.getCell(r, 2).value = '____________________________________'; r++
+  ws.getCell(r, 1).value = 'Data:'; ws.getCell(r, 1).font = { bold: true }; ws.getCell(r, 2).value = '____ / ____ / ______'; r++
+  ws.getCell(r, 1).value = 'Tapejara - RS, Brasil'; r++
   ws.columns = [{ width: 30 }, { width: 22 }, { width: 40 }, { width: 16 }, { width: 16 }]
   const buf = await wb.xlsx.writeBuffer()
   const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
