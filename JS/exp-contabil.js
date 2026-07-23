@@ -50,7 +50,10 @@ async function carregarSaldos() {
   area.innerHTML = `
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
       <h5 class="secao-titulo-card mb-0">${cfg.titulo}</h5>
-      <button class="btn btn-sm btn-outline-success no-print" id="btn-ec-excel">Exportar Excel</button>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn btn-sm btn-outline-success" id="btn-ec-excel">Exportar Excel</button>
+        <button class="btn btn-sm btn-outline-danger" id="btn-ec-pdf">Exportar PDF</button>
+      </div>
     </div>
     <div class="card"><div class="table-responsive"><table class="table table-sm table-hover mb-0" style="font-size:.85rem">
       <thead><tr>
@@ -82,6 +85,57 @@ async function carregarSaldos() {
     </table></div></div>
     ${linhas.length ? '' : '<p class="text-muted fst-italic mt-2">Nenhum cliente/fornecedor ativo. Cadastre na aba "Cadastros".</p>'}`
   $('btn-ec-excel').addEventListener('click', exportarExcel)
+  $('btn-ec-pdf').addEventListener('click', exportarPDF)
+}
+
+// ---------- Exportar PDF (tons de cinza, legível em P&B) ----------
+function exportarPDF() {
+  if (!saldoCache) return
+  const cfg = MODULOS[modulo]
+  const CAB = '#404040', ZEBRA = '#f2f2f2', TOTAL = '#c9c9c9', BORDA = '1px solid #000'
+  const th = `background:${CAB};color:#fff;font-weight:bold;border:${BORDA};padding:5px 6px;font-size:10px;text-align:center`
+  const tdL = (bg) => `background:${bg};color:#000;border:${BORDA};padding:4px 6px;font-size:10px;text-align:left`
+  const tdR = (bg) => `background:${bg};color:#000;border:${BORDA};padding:4px 6px;font-size:10px;text-align:right`
+  const linhas = saldoCache.linhas
+  const t = linhas.reduce((a, l) => ({ ant: a.ant + l.anterior, au: a.au + l.aumenta, di: a.di + l.diminui, at: a.at + l.atual }), { ant: 0, au: 0, di: 0, at: 0 })
+
+  let html = `<h2 style="text-align:center;margin:0 0 12px">${cfg.titulo.toUpperCase()} — ${esc(saldoCache.mes.nome)}</h2>
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr>
+        <th style="${th}">Entidade</th>
+        <th style="${th}">Saldo anterior</th>
+        <th style="${th}">${cfg.colA}</th>
+        <th style="${th}">${cfg.colD}</th>
+        <th style="${th}">Saldo atual</th>
+      </tr></thead>
+      <tbody>
+        ${linhas.map((l, idx) => {
+          const bg = idx % 2 ? ZEBRA : '#fff'
+          return `<tr>
+            <td style="${tdL(bg)}">${esc(l.nome)}</td>
+            <td style="${tdR(bg)}">${money(l.anterior)}</td>
+            <td style="${tdR(bg)}">${money(l.aumenta)}</td>
+            <td style="${tdR(bg)}">${money(l.diminui)}</td>
+            <td style="${tdR(bg)}">${money(l.atual)}</td>
+          </tr>`
+        }).join('')}
+        <tr>
+          <td style="${tdL(TOTAL)};font-weight:bold">TOTAL</td>
+          <td style="${tdR(TOTAL)};font-weight:bold">${money(t.ant)}</td>
+          <td style="${tdR(TOTAL)};font-weight:bold">${money(t.au)}</td>
+          <td style="${tdR(TOTAL)};font-weight:bold">${money(t.di)}</td>
+          <td style="${tdR(TOTAL)};font-weight:bold">${money(t.at)}</td>
+        </tr>
+      </tbody>
+    </table>`
+
+  let area = document.getElementById('area-impressao')
+  if (!area) { area = document.createElement('div'); area.id = 'area-impressao'; area.style.display = 'none'; document.body.appendChild(area) }
+  area.innerHTML = html
+  document.body.classList.add('imprimindo')
+  const limpar = () => { document.body.classList.remove('imprimindo'); window.removeEventListener('afterprint', limpar) }
+  window.addEventListener('afterprint', limpar)
+  window.print()
 }
 
 // ---------- Lançamentos (modal) ----------
