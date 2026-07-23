@@ -45,7 +45,7 @@ export function montarCabecalho(papel) {
  <li><a class="dropdown-item ${link.href.endsWith(paginaAtual) ? 'active' : ''}" href="${link.href}">${link.texto}</a></li>`).join('')
 
  const itemContabil = ehContabil ? `
- <li><hr class="dropdown-divider"></li><li><a class="dropdown-item item-contabil ${'/HTML/contabil.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/contabil.html">Contábil / Faturamento</a></li>` : ''
+ <li><hr class="dropdown-divider"></li><li><a class="dropdown-item item-contabil ${'/HTML/contabil.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/contabil.html">Contábil / Faturamento</a></li><li><a class="dropdown-item item-contabil ${'/HTML/exp-contabil.html'.endsWith(paginaAtual) ? 'active' : ''}" href="/HTML/exp-contabil.html">Contab. de Exportação</a></li>` : ''
 
  const nav = document.createElement('nav')
  nav.className = 'navbar navbar-pietrobon sticky-top'

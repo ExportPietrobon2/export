@@ -1073,3 +1073,8 @@ body[data-pagina="referencia.html"] .page-header-icon::before   { content: "📐
 body[data-pagina="embarques.html"] .page-header-icon::before    { content: "🚢"; }
 body[data-pagina="compras.html"] .page-header-icon::before      { content: "🛒"; }
 body[data-pagina="contabil.html"] .page-header-icon::before     { content: "💰"; }
+
+/* Ícones das telas contábeis + nova aba de exportação */
+body[data-pagina="exp-contabil.html"] .page-header-icon::before { content: "🌎"; }
+#menu-principal a[href$="contabil.html"]::before { content: "💰"; margin-right: 8px; }
+#menu-principal a[href$="exp-contabil.html"]::before { content: "🌎"; margin-right: 8px; }
