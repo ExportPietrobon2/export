@@ -255,8 +255,26 @@ function exportarPDF(d) {
   gerarPdfDeHtml(html, `Ordem_Producao_PI_${(d.numero_pi || '').replace(/\W+/g, '_')}.pdf`)
 }
 
+// Carrega um script externo uma única vez (caso o HTML não tenha as libs)
+function carregarScript(src) {
+  return new Promise((resolve, reject) => {
+    if ([...document.scripts].some((s) => s.src === src)) return resolve()
+    const s = document.createElement('script')
+    s.src = src
+    s.onload = () => resolve()
+    s.onerror = () => reject(new Error('Falha ao carregar ' + src))
+    document.head.appendChild(s)
+  })
+}
+
+async function garantirLibsPdf() {
+  if (!window.html2canvas) await carregarScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js')
+  if (!window.jspdf) await carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
+}
+
 // Gera um PDF real a partir do HTML (captura fiel, sem depender da janela de impressão)
 async function gerarPdfDeHtml(html, nomeArquivo) {
+  await garantirLibsPdf()
   const cont = document.createElement('div')
   cont.style.cssText = 'position:fixed;left:-10000px;top:0;width:780px;background:#fff;padding:24px'
   cont.innerHTML = html
